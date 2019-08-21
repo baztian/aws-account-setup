@@ -100,3 +100,15 @@ Create group "Sudo" with "AssumeAdminRole" policy
 Attach "Sudo" group to dev-<username>
 
 Setup aws-vault as described in `ubuntuInstall.txt`.
+
+## Serverless Framework
+
+https://alligator.io/serverless/up-and-running-with-serverless/
+
+    yarn global add serverless
+
+https://github.com/baztian/serverless-hello-world
+
+    $ aws-vault exec dev@babowe2019 -- ~/.yarn/bin/serverless deploy
+    $ curl https://oqwycu31j0.execute-api.us-west-2.amazonaws.com/dev/hello
+    $ aws-vault exec dev@babowe2019 -- ~/.yarn/bin/serverless remove
