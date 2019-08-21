@@ -51,3 +51,52 @@ https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html
 Budget (https://aws.amazon.com/getting-started/tutorials/control-your-costs-free-tier-budgets/)
 
 -> Enable all billing alerts https://console.aws.amazon.com/billing/home?#/preferences
+
+
+TODO: IAM password policy
+
+### Account alias
+
+https://docs.aws.amazon.com/IAM/latest/UserGuide/console_account-alias.html
+
+https://docs.aws.amazon.com/cli/latest/reference/iam/create-account-alias.html
+
+https://www.terraform.io/docs/providers/aws/r/iam_account_alias.html
+
+### Create read only group
+
+Create group "ReadOnly".
+Policies:
+* arn:aws:iam::aws:policy/ReadOnlyAccess
+* arn:aws:iam::961704225731:policy/BillingViewAccess
+
+### Create dev user
+
+dev-<username> with console and access token access
+
+Add to ReadOnly group.
+
+Use aws-vault add ... to add access key
+
+Login as dev-<username>
+Enable MFA
+
+### Create role to assume
+
+Create role "AdminRole" with policy "AdministratorAccess".
+
+Create policy "AssumeAdminRole"
+
+{
+    "Version": "2012-10-17",
+    "Statement": {
+        "Effect": "Allow",
+        "Action": "sts:AssumeRole",
+        "Resource": "arn:aws:iam::961704225731:role/AdminRole"
+    }
+}
+
+Create group "Sudo" with "AssumeAdminRole" policy
+Attach "Sudo" group to dev-<username>
+
+Setup aws-vault as described in `ubuntuInstall.txt`.
