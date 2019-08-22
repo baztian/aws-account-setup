@@ -1,14 +1,10 @@
+# AWS (free tier) account setup
+
+This repo shares some instructions, good practices, tips and links to help you set up your AWS account. It is specifically aimed at developers that like to experimant with a private account to play with services on AWS. In the future I hopefully can share some IAC to automate some of the steps of this document.
+
 ## General AWS Free Tier information
 
 https://aws.amazon.com/de/free/#legal
-
-## Auto Shutdown and Start Amazon EC2 Instance
-
-https://stackoverflow.com/questions/2413029/auto-shutdown-and-start-amazon-ec2-instance
-
-https://aws.amazon.com/de/premiumsupport/knowledge-center/start-stop-lambda-cloudwatch/
-
-https://stackoverflow.com/questions/19042025/amazon-ec2-free-tier-how-many-instances-can-i-run
 
 ## Setup AWS Free Tier account
 
@@ -26,9 +22,9 @@ https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html
 
 ### Initial account configuration
 
--> Create new Gmail Account
+-> Create separate (new) email account
 
--> Add Account to Smartphone
+-> Add account to smartphone to not miss any important mail
 
 -> https://console.aws.amazon.com/iam/
 
@@ -38,7 +34,7 @@ https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html
 
 -> Create Admin user: https://docs.aws.amazon.com/mediapackage/latest/ug/setting-up-create-iam-user.html
 
--> Signin with Administrator account
+-> Signin with `Administrator` account
 
 -> MFA (IAM->User Administrator->Security Credentials->Assigned MFA device
 
@@ -59,45 +55,52 @@ TODO: IAM password policy
 
 https://docs.aws.amazon.com/IAM/latest/UserGuide/console_account-alias.html
 
+or
+
 https://docs.aws.amazon.com/cli/latest/reference/iam/create-account-alias.html
+
+or
 
 https://www.terraform.io/docs/providers/aws/r/iam_account_alias.html
 
 ### Create read only group
 
-Create group "ReadOnly".
+Create group `ReadOnly`.
+
 Policies:
-* arn:aws:iam::aws:policy/ReadOnlyAccess
-* arn:aws:iam::961704225731:policy/BillingViewAccess
+* `arn:aws:iam::aws:policy/ReadOnlyAccess`
+* `arn:aws:iam::<your-account-id>:policy/BillingViewAccess`
 
 ### Create dev user
 
-dev-<username> with console and access token access
+`dev-<username>` with console and access token access
 
-Add to ReadOnly group.
+Add to `ReadOnly` group.
 
-Use aws-vault add ... to add access key
+Install [aws-vault](https://github.com/99designs/aws-vault/).
 
-Login as dev-<username>
+Use `aws-vault add <account-alias>` to add access key
+
+Login as `dev-<username>`
 Enable MFA
 
 ### Create role to assume
 
-Create role "AdminRole" with policy "AdministratorAccess".
+Create role `AdminRole` with policy `AdministratorAccess`.
 
-Create policy "AssumeAdminRole"
+Create policy `AssumeAdminRole`
 
-{
-    "Version": "2012-10-17",
-    "Statement": {
-        "Effect": "Allow",
-        "Action": "sts:AssumeRole",
-        "Resource": "arn:aws:iam::961704225731:role/AdminRole"
+    {
+        "Version": "2012-10-17",
+        "Statement": {
+            "Effect": "Allow",
+            "Action": "sts:AssumeRole",
+            "Resource": "arn:aws:iam::<your-account-id>:role/AdminRole"
+        }
     }
-}
 
-Create group "Sudo" with "AssumeAdminRole" policy
-Attach "Sudo" group to dev-<username>
+Create group `Sudo` with `AssumeAdminRole` policy
+Attach `Sudo` group to `dev-<username>`
 
 Setup aws-vault as described in `ubuntuInstall.txt`.
 
@@ -109,6 +112,14 @@ https://alligator.io/serverless/up-and-running-with-serverless/
 
 https://github.com/baztian/serverless-hello-world
 
-    $ aws-vault exec dev@babowe2019 -- ~/.yarn/bin/serverless deploy
+    $ aws-vault exec dev@<account-alias> -- ~/.yarn/bin/serverless deploy
     $ curl https://oqwycu31j0.execute-api.us-west-2.amazonaws.com/dev/hello
-    $ aws-vault exec dev@babowe2019 -- ~/.yarn/bin/serverless remove
+    $ aws-vault exec dev@<account-alias> -- ~/.yarn/bin/serverless remove
+
+## Auto Shutdown and Start Amazon EC2 Instance
+
+https://stackoverflow.com/questions/2413029/auto-shutdown-and-start-amazon-ec2-instance
+
+https://aws.amazon.com/de/premiumsupport/knowledge-center/start-stop-lambda-cloudwatch/
+
+https://stackoverflow.com/questions/19042025/amazon-ec2-free-tier-how-many-instances-can-i-run
