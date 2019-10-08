@@ -51,6 +51,8 @@ Budget (https://aws.amazon.com/getting-started/tutorials/control-your-costs-free
 
 TODO: IAM password policy
 
+TODO: Check how much of this can be replaced with https://registry.terraform.io/modules/terraform-aws-modules
+
 ### Account alias
 
 https://docs.aws.amazon.com/IAM/latest/UserGuide/console_account-alias.html
