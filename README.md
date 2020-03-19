@@ -126,6 +126,8 @@ https://github.com/baztian/serverless-hello-world
 
 ## Auto Shutdown and Start Amazon EC2 Instance
 
+https://docs.aws.amazon.com/autoscaling/ec2/userguide/schedule_time.html
+
 https://stackoverflow.com/questions/2413029/auto-shutdown-and-start-amazon-ec2-instance
 
 https://aws.amazon.com/de/premiumsupport/knowledge-center/start-stop-lambda-cloudwatch/
