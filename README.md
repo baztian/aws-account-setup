@@ -106,6 +106,12 @@ Attach `Sudo` group to `dev-<username>`
 
 Setup aws-vault as described in `ubuntuInstall.txt`.
 
+## Working with aws-vault
+
+To work locally with AWS you can start an [EC2 Instance Metadata Service](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html).
+
+    aws-vault exec --server dev@<account-alias>
+
 ## Serverless Framework
 
 https://alligator.io/serverless/up-and-running-with-serverless/
