@@ -14,6 +14,8 @@ Create account: https://portal.aws.amazon.com/billing/signup#/start
 
 https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html
 
+TODO: Automate using https://github.com/terraform-aws-modules/terraform-aws-iam#iam-best-practices
+
 > Enable AWS multi-factor authentication (MFA) on your AWS account root user account. For more information, see [Using Multi-Factor Authentication (MFA) in AWS.](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa.html)
 
 ...
@@ -32,7 +34,7 @@ https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html
 
 -> "enable access to billing data" (https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_billing.html)
 
--> Create Admin user: https://docs.aws.amazon.com/mediapackage/latest/ug/setting-up-create-iam-user.html
+-> Create Admin user: https://docs.aws.amazon.com/IAM/latest/UserGuide/getting-started_create-admin-group.html
 
 -> Signin with `Administrator` account
 
