@@ -32,6 +32,8 @@ TODO: Automate using https://github.com/terraform-aws-modules/terraform-aws-iam#
 
 -> MFA
 
+-> Payment Currency Preference (Account settings) to EUR
+
 -> "enable access to billing data" (https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_billing.html)
 
 -> Create Admin user: https://docs.aws.amazon.com/IAM/latest/UserGuide/getting-started_create-admin-group.html
