@@ -23,24 +23,12 @@ output "this_iam_access_key_secret" {
 
 data "aws_caller_identity" "current" {}
 
-module "iam_group_developers" {
-  source = "terraform-aws-modules/iam/aws//modules/iam-group-with-policies"
-  version = "~> 2.0"
-
-  name = "developers"
-
-  group_users = [
-    module.iam_user.this_iam_user_name,
-  ]
-}
-
-
 module "iam_assumable_roles" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-roles"
   version = "~> 2.0"
 
   trusted_role_arns = [
-    "arn:aws:iam::${data.aws_caller_identity.current.account_id}:group/${module.iam_group_developers.this_group_name}",
+    "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/dev-babowe",
   ]
 
   create_admin_role = true
