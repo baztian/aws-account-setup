@@ -4,5 +4,11 @@ module "iam_account" {
 
   account_alias = "devbabowe2020"
 
-  minimum_password_length = 12
+  minimum_password_length = var.password_lenght
+}
+
+variable "password_lenght" {
+  description = "Password length to be used in this account"
+  type = number
+  default = 12
 }

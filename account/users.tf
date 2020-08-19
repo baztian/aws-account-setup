@@ -3,11 +3,13 @@ module "iam_user" {
   version = "~> 2.0"
 
   name          = "dev-babowe"
-  create_iam_user_login_profile = false # don't create user login to avoid gpg handling that I currently don't understand. https://stackoverflow.com/questions/53513795/pgp-key-in-terraform-for-aws-iam-user-login-profile
-  # instead enable console password manually
+  # gpg --list-keys
+  # gpg --export <email or id>|base64 > pubkey.gpg
+  pgp_key = file("pubkey.gpg")
+  create_iam_user_login_profile = true
   force_destroy = true
-
-  password_reset_required = true
+  password_length = var.password_lenght
+  password_reset_required = false
 }
 
 output "this_iam_access_key_id" {
@@ -16,9 +18,18 @@ output "this_iam_access_key_id" {
 }
 
 output "this_iam_access_key_secret" {
-  description = "The access key secret"
-  value       = module.iam_user.this_iam_access_key_secret
-  sensitive   = true
+  description = "The gpg encrypted and base64 encoded access key secret. Use base64 --decode|gpg --decrypt to decrypt the value."
+  value       = module.iam_user.this_iam_access_key_encrypted_secret
+}
+
+output "this_iam_user_login_profile_encrypted_password" {
+  description = "The gpg encrypted and base64 encoded encrypted login profile password. Use base64 --decode|gpg --decrypt to decrypt the value."
+  value       = module.iam_user.this_iam_user_login_profile_encrypted_password
+}
+
+output "this_iam_user_gpg_fingerprint" {
+  description = "The gpg fingerprint used to encrypt the secrets. Use gpg --fingerprint to list known fingerprints."
+  value       = module.iam_user.this_iam_access_key_key_fingerprint
 }
 
 data "aws_caller_identity" "current" {}
