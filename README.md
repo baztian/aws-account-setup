@@ -116,6 +116,10 @@ To work locally with AWS you can start an [EC2 Instance Metadata Service](https:
 
     aws-vault exec --server dev@<account-alias>
 
+## terraform
+
+https://registry.terraform.io/providers/hashicorp/aws/latest/docs
+
 ## Serverless Framework
 
 https://alligator.io/serverless/up-and-running-with-serverless/

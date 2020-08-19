@@ -28,7 +28,7 @@ module "iam_assumable_roles" {
   version = "~> 2.0"
 
   trusted_role_arns = [
-    "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/dev-babowe",
+    "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root",
   ]
 
   create_admin_role = true
@@ -38,4 +38,21 @@ module "iam_assumable_roles" {
 
   create_readonly_role       = true
   readonly_role_requires_mfa = false
+}
+
+module "iam_group_with_assumable_roles_policy" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-group-with-assumable-roles-policy"
+  version = "~> 2.0"
+
+  name = "developers"
+
+  assumable_roles = [
+    module.iam_assumable_roles.admin_iam_role_arn,
+    module.iam_assumable_roles.poweruser_iam_role_arn,
+    module.iam_assumable_roles.readonly_iam_role_arn,
+  ]
+
+  group_users = [
+    module.iam_user.this_iam_user_name
+  ]
 }
