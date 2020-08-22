@@ -27,8 +27,7 @@ resource "aws_s3_bucket" "terraform_state" {
 
 resource "aws_dynamodb_table" "terraform_state_lock" {
   name           = "${var.stage}-terraform-state-lock"
-  read_capacity  = 1
-  write_capacity = 1
+  billing_mode = "PAY_PER_REQUEST"
   hash_key       = "LockID"
 
   attribute {
