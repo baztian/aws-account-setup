@@ -46,18 +46,18 @@ module "example_asg" {
   source  = "terraform-aws-modules/autoscaling/aws"
   version = "~> 3.0"
 
-  name = "example-with-elb"
+  name = "example-with-alb"
 
   # Launch configuration
   #
   # launch_configuration = "my-existing-launch-configuration" # Use the existing launch configuration
   # create_lc = false # disables creation of launch configuration
   lc_name = "example-lc"
+  target_group_arns = module.alb.target_group_arns
 
   image_id        = data.aws_ami.amazon_linux.id
   instance_type   = "t2.micro"
   security_groups = [data.aws_security_group.default.id]
-  load_balancers  = [module.elb.this_elb_id]
 
   ebs_block_device = [
     {
@@ -99,34 +99,35 @@ module "example_asg" {
 }
 
 ######
-# ELB
+# ALB
 ######
-module "elb" {
-  source  = "terraform-aws-modules/elb/aws"
-  version = "~> 2.0"
+module "alb" {
+  source  = "terraform-aws-modules/alb/aws"
+  version = "~> 5.0"
 
-  name = "elb-example"
+  name = "alb-example"
 
+  vpc_id          = data.aws_vpc.default.id
   subnets         = data.aws_subnet_ids.all.ids
   security_groups = [data.aws_security_group.default.id]
   internal        = false
 
-  listener = [
+  target_groups = [
     {
-      instance_port     = "80"
-      instance_protocol = "HTTP"
-      lb_port           = "80"
-      lb_protocol       = "HTTP"
-    },
+      name_prefix      = "pref-"
+      backend_protocol = "HTTP"
+      backend_port     = 80
+      target_type      = "instance"
+    }
   ]
 
-  health_check = {
-    target              = "HTTP:80/"
-    interval            = 30
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 5
-  }
+  http_tcp_listeners = [
+    {
+      port     = 80
+      protocol = "HTTP"
+      target_group_index = 0
+    },
+  ]
 
   tags = {
     Owner       = "user"
