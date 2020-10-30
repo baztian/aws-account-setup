@@ -2,6 +2,31 @@ provider "aws" {
   region = "eu-central-1"
 }
 
+locals {
+  user_data = <<EOF
+#!/bin/bash
+export PATH=/usr/local/bin:$PATH;
+
+yum update -y
+yum install docker -y
+service docker start
+
+chown ec2-user:ec2-user /home/ec2-user/.dockercfg
+usermod -a -G docker ec2-user
+curl -L https://github.com/docker/compose/releases/download/1.27.4/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+chown root:docker /usr/local/bin/docker-compose
+cat <<HERE >/home/ec2-user/docker-compose.yml
+nginx:
+  image: nginx
+  ports:
+    - "80:80"
+HERE
+chown ec2-user:ec2-user /home/ec2-user/docker-compose.yml
+/usr/local/bin/docker-compose -f /home/ec2-user/docker-compose.yml up -d
+EOF
+}
+
 ##############################################################
 # Data sources to get VPC, subnets and security group details
 ##############################################################
@@ -56,8 +81,10 @@ module "example_asg" {
   target_group_arns = module.alb.target_group_arns
 
   image_id        = data.aws_ami.amazon_linux.id
-  instance_type   = "t2.micro"
+  instance_type   = "t3.micro"
   security_groups = [data.aws_security_group.default.id]
+
+  user_data_base64 = base64encode(local.user_data)
 
   ebs_block_device = [
     {
