@@ -73,7 +73,7 @@ data "aws_ami" "amazon_linux" {
     name = "name"
 
     values = [
-      "amzn-ami-hvm-*-x86_64-gp2",
+      "amzn2-ami-hvm-*-x86_64-gp2",
     ]
   }
 
@@ -102,8 +102,9 @@ module "example_asg" {
   lc_name = "example-lc"
   target_group_arns = module.alb.target_group_arns
 
-  image_id        = data.aws_ami.amazon_linux.id
-  instance_type   = "t3.micro"
+  iam_instance_profile = aws_iam_instance_profile.instance_profile.name
+  image_id             = data.aws_ami.amazon_linux.id
+  instance_type        = "t3.micro"
   security_groups      = [module.service_sg.this_security_group_id]
 
   user_data_base64 = base64encode(local.user_data)
@@ -181,4 +182,37 @@ module "alb" {
     Owner       = "user"
     Environment = "dev"
   }
+}
+
+# SessionManager
+data "aws_iam_policy_document" "assume_role" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+    principals {
+      identifiers = ["ec2.amazonaws.com"]
+      type        = "Service"
+    }
+  }
+}
+
+data "aws_iam_policy" "AmazonSSMManagedInstanceCore" {
+  arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_role" "role" {
+  name = var.service_name
+  path = "/"
+
+  assume_role_policy = data.aws_iam_policy_document.assume_role.json
+}
+
+resource "aws_iam_role_policy_attachment" "ssm_role_policy_attach" {
+  role       = aws_iam_role.role.name
+  policy_arn = data.aws_iam_policy.AmazonSSMManagedInstanceCore.arn
+}
+
+resource "aws_iam_instance_profile" "instance_profile" {
+  name = "${var.service_name}-${var.stage}-instance-profile"
+  role = aws_iam_role.role.name
 }
