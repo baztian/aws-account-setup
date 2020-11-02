@@ -4,26 +4,28 @@ provider "aws" {
 
 locals {
   user_data = <<EOF
-#!/bin/bash
-export PATH=/usr/local/bin:$PATH;
+#!/bin/bash -xe
+#export PATH=/usr/local/bin:$PATH;
+whoami
 
 yum update -y
-yum install docker -y
+amazon-linux-extras install docker -y
 service docker start
 
-chown ec2-user:ec2-user /home/ec2-user/.dockercfg
-usermod -a -G docker ec2-user
-curl -L https://github.com/docker/compose/releases/download/1.27.4/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
-chmod +x /usr/local/bin/docker-compose
-chown root:docker /usr/local/bin/docker-compose
-cat <<HERE >/home/ec2-user/docker-compose.yml
-nginx:
-  image: nginx
-  ports:
-    - "80:80"
-HERE
-chown ec2-user:ec2-user /home/ec2-user/docker-compose.yml
-/usr/local/bin/docker-compose -f /home/ec2-user/docker-compose.yml up -d
+usermod -aG docker ec2-user
+su - ec2-user -c "docker run -d --name wiremock -p 80:8080 rodolpheche/wiremock"
+#sudo curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
+#chmod +x /usr/local/bin/docker-compose
+#chown root:docker /usr/local/bin/docker-compose
+#cat <<HERE >/home/ec2-user/docker-compose.yml
+#nginx:
+#  image: nginx
+#  ports:
+#    - "80:80"
+#HERE
+#chown ec2-user:ec2-user /home/ec2-user/docker-compose.yml
+#/usr/local/bin/docker-compose -f /home/ec2-user/docker-compose.yml up -d
+
 EOF
 }
 
@@ -167,6 +169,12 @@ module "alb" {
       backend_protocol = "HTTP"
       backend_port     = 80
       target_type      = "instance"
+      health_check = {
+        # wiremock return 403 by default for /
+        # and 302 for /__admin
+        path    = "/__admin"
+        matcher = "200-399"
+      }
     }
   ]
 
