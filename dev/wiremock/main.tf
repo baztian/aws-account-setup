@@ -38,9 +38,31 @@ data "aws_subnet_ids" "all" {
   vpc_id = data.aws_vpc.default.id
 }
 
-data "aws_security_group" "default" {
-  vpc_id = data.aws_vpc.default.id
-  name   = "default"
+module "alb_sg" {
+  source = "terraform-aws-modules/security-group/aws//modules/http-80"
+
+  name        = "http-sg"
+  description = "Security group with HTTP ports open for everybody (IPv4 CIDR), egress ports are all world open"
+  vpc_id      = data.aws_vpc.default.id
+
+  ingress_cidr_blocks = ["0.0.0.0/0"]
+}
+
+module "service_sg" {
+  source = "terraform-aws-modules/security-group/aws//modules/http-80"
+
+  name        = "service-sg"
+  description = "Security group for this service that allows being accessed from the ALB"
+  vpc_id      = data.aws_vpc.default.id
+
+  # work around https://github.com/terraform-aws-modules/terraform-aws-security-group/issues/191
+  ingress_cidr_blocks = [data.aws_vpc.default.cidr_block]
+  ingress_with_source_security_group_id = [
+    {
+      rule                     = "http-80-tcp",
+      source_security_group_id = module.alb_sg.this_security_group_id
+    },
+  ]
 }
 
 data "aws_ami" "amazon_linux" {
@@ -82,7 +104,7 @@ module "example_asg" {
 
   image_id        = data.aws_ami.amazon_linux.id
   instance_type   = "t3.micro"
-  security_groups = [data.aws_security_group.default.id]
+  security_groups      = [module.service_sg.this_security_group_id]
 
   user_data_base64 = base64encode(local.user_data)
 
@@ -136,8 +158,7 @@ module "alb" {
 
   vpc_id          = data.aws_vpc.default.id
   subnets         = data.aws_subnet_ids.all.ids
-  security_groups = [data.aws_security_group.default.id]
-  internal        = false
+  security_groups = [module.alb_sg.this_security_group_id]
 
   target_groups = [
     {
