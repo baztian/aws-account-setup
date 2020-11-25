@@ -8,3 +8,8 @@ variable "stage" {
     type = string
     default = "dev"
 }
+variable "hosted_zone_name" {
+    description = "Name of the hosted zone where this service will be available via DNS record"
+    type = string
+    default = "twenty.zonny.de"
+}
