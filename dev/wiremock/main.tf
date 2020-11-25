@@ -43,28 +43,38 @@ data "aws_subnet_ids" "all" {
 module "alb_sg" {
   source = "terraform-aws-modules/security-group/aws//modules/http-80"
 
-  name        = "http-sg"
+  name        = "alb-sg"
   description = "Security group with HTTP ports open for everybody (IPv4 CIDR), egress ports are all world open"
   vpc_id      = data.aws_vpc.default.id
 
   ingress_cidr_blocks = ["0.0.0.0/0"]
+  ingress_ipv6_cidr_blocks = ["::/0"]
 }
 
-module "service_sg" {
-  source = "terraform-aws-modules/security-group/aws//modules/http-80"
-
-  name        = "service-sg"
+resource "aws_security_group" "web_service_sg" {
+  name        = "web-service-sg"
   description = "Security group for this service that allows being accessed from the ALB"
   vpc_id      = data.aws_vpc.default.id
 
-  # work around https://github.com/terraform-aws-modules/terraform-aws-security-group/issues/191
-  ingress_cidr_blocks = [data.aws_vpc.default.cidr_block]
-  ingress_with_source_security_group_id = [
-    {
-      rule                     = "http-80-tcp",
-      source_security_group_id = module.alb_sg.this_security_group_id
-    },
-  ]
+  ingress {
+    description = "HTTP from ALB"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    security_groups = [module.alb_sg.this_security_group_id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  tags = {
+    Name = "web-service-sg"
+  }
 }
 
 data "aws_ami" "amazon_linux" {
@@ -107,7 +117,7 @@ module "example_asg" {
   iam_instance_profile = aws_iam_instance_profile.instance_profile.name
   image_id             = data.aws_ami.amazon_linux.id
   instance_type        = "t3.micro"
-  security_groups      = [module.service_sg.this_security_group_id]
+  security_groups      = [aws_security_group.web_service_sg.id]
 
   user_data_base64 = base64encode(local.user_data)
 
@@ -132,9 +142,10 @@ module "example_asg" {
   vpc_zone_identifier       = data.aws_subnet_ids.all.ids
   health_check_type         = "EC2"
   min_size                  = 0
-  max_size                  = 1
+  max_size                  = 2
   desired_capacity          = 0
   wait_for_capacity_timeout = 0
+#  recreate_asg_when_lc_changes = true
 
   tags = [
     {
