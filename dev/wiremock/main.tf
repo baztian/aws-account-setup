@@ -41,14 +41,21 @@ data "aws_subnet_ids" "all" {
 }
 
 module "alb_sg" {
-  source = "terraform-aws-modules/security-group/aws//modules/http-80"
+  source = "terraform-aws-modules/security-group/aws"
 
   name        = "alb-sg"
-  description = "Security group with HTTP ports open for everybody (IPv4 CIDR), egress ports are all world open"
+  description = "Security group with HTTP(s) ports open for everybody (IPv4+v6 CIDR), egress ports are all world open"
   vpc_id      = data.aws_vpc.default.id
 
   ingress_cidr_blocks = ["0.0.0.0/0"]
   ingress_ipv6_cidr_blocks = ["::/0"]
+  ingress_rules            = ["http-80-tcp","https-443-tcp"]
+  ingress_with_self = [
+    {
+      rule = "all-all"
+    },
+  ]
+  egress_rules      = ["all-all"]
 }
 
 resource "aws_security_group" "web_service_sg" {
