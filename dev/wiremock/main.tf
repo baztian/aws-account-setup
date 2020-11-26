@@ -64,6 +64,14 @@ resource "aws_security_group" "web_service_sg" {
     security_groups = [module.alb_sg.this_security_group_id]
   }
 
+  ingress {
+    description = "HTTPS/TLS from ALB"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    security_groups = [module.alb_sg.this_security_group_id]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
