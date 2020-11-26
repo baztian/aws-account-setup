@@ -12,3 +12,8 @@ resource "aws_route53_record" "service" {
     evaluate_target_health = true
   }
 }
+
+data "aws_acm_certificate" "issued" {
+  domain   = data.aws_route53_zone.this.name
+  statuses = ["ISSUED"]
+}
