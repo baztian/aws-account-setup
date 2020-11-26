@@ -13,7 +13,7 @@ amazon-linux-extras install docker -y
 service docker start
 
 usermod -aG docker ec2-user
-su - ec2-user -c "docker run -d --name wiremock -p 80:8080 rodolpheche/wiremock"
+su - ec2-user -c "docker run -d --name wiremock -p 80:8080 rodolpheche/wiremock --admin-api-basic-auth admin:swordfish"
 #sudo curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
 #chmod +x /usr/local/bin/docker-compose
 #chown root:docker /usr/local/bin/docker-compose
