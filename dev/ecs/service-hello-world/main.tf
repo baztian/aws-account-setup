@@ -1,3 +1,5 @@
+data "aws_region" "current" {}
+
 resource "aws_cloudwatch_log_group" "hello_world" {
   name              = "hello_world"
   retention_in_days = 1
@@ -16,7 +18,7 @@ resource "aws_ecs_task_definition" "hello_world" {
     "logConfiguration": {
       "logDriver": "awslogs",
       "options": {
-        "awslogs-region": "eu-west-1",
+        "awslogs-region": "${data.aws_region.current.name}",
         "awslogs-group": "hello_world",
         "awslogs-stream-prefix": "complete-ecs"
       }

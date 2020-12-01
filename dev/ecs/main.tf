@@ -1,3 +1,7 @@
+provider "aws" {
+  region = "eu-central-1"
+}
+
 locals {
   name        = "complete-ecs"
   environment = "dev"
@@ -32,15 +36,16 @@ module "vpc" {
 
 #----- ECS --------
 module "ecs" {
-  source = "../../"
+  source = "terraform-aws-modules/ecs/aws"
 
   name               = local.name
   container_insights = true
 
-  capacity_providers = ["FARGATE", "FARGATE_SPOT", aws_ecs_capacity_provider.prov1.name]
+  capacity_providers = [aws_ecs_capacity_provider.prov1.name, "FARGATE", "FARGATE_SPOT"]
 
   default_capacity_provider_strategy = {
-    capacity_provider = aws_ecs_capacity_provider.prov1.name # "FARGATE_SPOT"
+    capacity_provider = aws_ecs_capacity_provider.prov1.name # EC2
+    weight = 1
   }
 
   tags = {
@@ -49,7 +54,7 @@ module "ecs" {
 }
 
 module "ec2_profile" {
-  source = "../../modules/ecs-instance-profile"
+  source = "terraform-aws-modules/ecs/aws//modules/ecs-instance-profile"
 
   name = local.name
 
@@ -84,7 +89,7 @@ data "aws_ami" "amazon_linux_ecs" {
 
   filter {
     name   = "name"
-    values = ["amzn-ami-*-amazon-ecs-optimized"]
+    values = ["amzn2-ami-ecs-hvm-*-x86_64-ebs"]
   }
 
   filter {
@@ -103,14 +108,14 @@ module "asg" {
   lc_name = local.ec2_resources_name
 
   image_id             = data.aws_ami.amazon_linux_ecs.id
-  instance_type        = "t2.micro"
+  instance_type        = "t3.micro"
   security_groups      = [module.vpc.default_security_group_id]
   iam_instance_profile = module.ec2_profile.this_iam_instance_profile_id
   user_data            = data.template_file.user_data.rendered
 
   # Auto scaling group
   asg_name                  = local.ec2_resources_name
-  vpc_zone_identifier       = module.vpc.private_subnets
+  vpc_zone_identifier       = module.vpc.public_subnets
   health_check_type         = "EC2"
   min_size                  = 0
   max_size                  = 2
@@ -137,13 +142,4 @@ data "template_file" "user_data" {
   vars = {
     cluster_name = local.name
   }
-}
-
-###################
-# Disabled cluster
-###################
-module "disabled_ecs" {
-  source = "../../"
-
-  create_ecs = false
 }
