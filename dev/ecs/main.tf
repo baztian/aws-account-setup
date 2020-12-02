@@ -2,6 +2,14 @@ provider "aws" {
   region = "eu-central-1"
 }
 
+data "aws_vpc" "default" {
+  default = true
+}
+
+data "aws_subnet_ids" "all" {
+  vpc_id = data.aws_vpc.default.id
+}
+
 locals {
   name        = "complete-ecs"
   environment = "dev"
@@ -12,26 +20,6 @@ locals {
 
 data "aws_availability_zones" "available" {
   state = "available"
-}
-
-module "vpc" {
-  source  = "terraform-aws-modules/vpc/aws"
-  version = "~> 2.0"
-
-  name = local.name
-
-  cidr = "10.1.0.0/16"
-
-  azs             = [data.aws_availability_zones.available.names[0], data.aws_availability_zones.available.names[1]]
-  private_subnets = ["10.1.1.0/24", "10.1.2.0/24"]
-  public_subnets  = ["10.1.11.0/24", "10.1.12.0/24"]
-
-  enable_nat_gateway = false # false is just faster
-
-  tags = {
-    Environment = local.environment
-    Name        = local.name
-  }
 }
 
 #----- ECS --------
@@ -72,14 +60,6 @@ resource "aws_ecs_capacity_provider" "prov1" {
 
 }
 
-#----- ECS  Services--------
-module "hello_world" {
-  source = "./service-hello-world"
-
-  cluster_id = module.ecs.this_ecs_cluster_id
-  ecs_cluster_security_group_id = aws_security_group.ecs_cluster_sg.id
-}
-
 #----- ECS  Resources--------
 
 #For now we only use the AWS ECS optimized ami <https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-optimized_AMI.html>
@@ -102,7 +82,6 @@ data "aws_ami" "amazon_linux_ecs" {
 resource "aws_security_group" "ecs_cluster_sg" {
   name        = "ecs-cluster-sg"
   description = "Security group for the ecs cluster"
-  vpc_id      = module.vpc.vpc_id
 
   egress {
     description = "Allow all outbound traffic."
@@ -135,7 +114,7 @@ module "asg" {
 
   # Auto scaling group
   asg_name                  = local.ec2_resources_name
-  vpc_zone_identifier       = module.vpc.public_subnets
+  vpc_zone_identifier       = data.aws_subnet_ids.all.ids
   health_check_type         = "EC2"
   min_size                  = 0
   max_size                  = 2

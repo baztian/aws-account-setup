@@ -1,3 +1,7 @@
+provider "aws" {
+  region = "eu-central-1"
+}
+
 data "aws_region" "current" {}
 
 resource "aws_cloudwatch_log_group" "hello_world" {
