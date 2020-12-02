@@ -77,6 +77,7 @@ module "hello_world" {
   source = "./service-hello-world"
 
   cluster_id = module.ecs.this_ecs_cluster_id
+  ecs_cluster_security_group_id = aws_security_group.ecs_cluster_sg.id
 }
 
 #----- ECS  Resources--------
@@ -98,6 +99,25 @@ data "aws_ami" "amazon_linux_ecs" {
   }
 }
 
+resource "aws_security_group" "ecs_cluster_sg" {
+  name        = "ecs-cluster-sg"
+  description = "Security group for the ecs cluster"
+  vpc_id      = module.vpc.vpc_id
+
+  egress {
+    description = "Allow all outbound traffic."
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  tags = {
+    Name = "ecs-cluster-sg"
+  }
+}
+
 module "asg" {
   source  = "terraform-aws-modules/autoscaling/aws"
   version = "~> 3.0"
@@ -109,7 +129,7 @@ module "asg" {
 
   image_id             = data.aws_ami.amazon_linux_ecs.id
   instance_type        = "t3.micro"
-  security_groups      = [module.vpc.default_security_group_id]
+  security_groups      = [aws_security_group.ecs_cluster_sg.id]
   iam_instance_profile = module.ec2_profile.this_iam_instance_profile_id
   user_data            = data.template_file.user_data.rendered
 
