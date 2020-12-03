@@ -1,7 +1,3 @@
-output "http_target_group_arn" {
-  description = "The ARN of the HTTP target group"
-  value = aws_lb_target_group.http_target_group.arn
-}
 output "alb_dns_name" {
   description = "DNS Name of the LB"
   value       = aws_lb.this_alb.dns_name

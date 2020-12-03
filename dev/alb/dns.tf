@@ -4,7 +4,7 @@ data "aws_route53_zone" "this" {
 
 resource "aws_route53_record" "service" {
   zone_id = data.aws_route53_zone.this.zone_id
-  name    = var.alb_name
+  name    = "*"
   type    = "A"
   alias {
     name                   = aws_lb.this_alb.dns_name
