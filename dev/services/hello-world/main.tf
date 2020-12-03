@@ -15,9 +15,8 @@ resource aws_security_group_rule "simple_app_sg_rule" {
   from_port   = 80
   to_port     = 80
   protocol    = "tcp"
-  cidr_blocks = ["0.0.0.0/0"]
-  ipv6_cidr_blocks = ["::/0"]
   security_group_id = var.ecs_cluster_security_group_id
+  source_security_group_id = var.source_security_group_id
 }
 
 resource "aws_ecs_task_definition" "hello_world" {
@@ -66,4 +65,10 @@ resource "aws_ecs_service" "hello_world" {
 
   deployment_maximum_percent         = 100
   deployment_minimum_healthy_percent = 0
+
+  load_balancer {
+    target_group_arn = var.load_balancer_target_group_arn
+    container_name = "simple-app"
+    container_port = 80
+  }
 }

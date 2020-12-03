@@ -40,20 +40,25 @@ resource "aws_lb" "this_alb" {
   security_groups    = [module.alb_sg.this_security_group_id]
 }
 
+
+resource "aws_lb_target_group" "http_target_group" {
+  name_prefix = "pref-"
+  # protocol used by the target
+  protocol = "HTTP"
+  # port exposed by the target
+  port = 80
+  target_type = "instance"
+  vpc_id = data.aws_vpc.default.id
+}
+
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.this_alb.arn
   port              = 80
   protocol          = "HTTP"
 
-  # By default, return a simple 404 page
   default_action {
-    type = "fixed-response"
-
-    fixed_response {
-      content_type = "text/plain"
-      message_body = "404: page not found"
-      status_code  = 404
-    }
+    target_group_arn = aws_lb_target_group.http_target_group.id
+    type             = "forward"
   }
 }
 resource "aws_lb_listener" "https" {
@@ -61,14 +66,9 @@ resource "aws_lb_listener" "https" {
   port              = 443
   protocol          = "HTTPS"
   certificate_arn    = data.aws_acm_certificate.issued.arn
-  # By default, return a simple 404 page
-  default_action {
-    type = "fixed-response"
 
-    fixed_response {
-      content_type = "text/plain"
-      message_body = "404: page not found"
-      status_code  = 404
-    }
+  default_action {
+    target_group_arn = aws_lb_target_group.http_target_group.id
+    type             = "forward"
   }
 }
