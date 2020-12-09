@@ -1,4 +1,4 @@
-output "sns_topic_arn" {
-  description = "SNS Topic ARN to be subscribed to in order to delivery the clodwatch billing alarms"
-  value       = aws_sns_topic.budget_alerts.arn
+output "total_costs_budget_id" {
+  description = "Budget of total costs id"
+  value       = aws_budgets_budget.total_cost.id
 }
