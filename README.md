@@ -42,22 +42,23 @@ TODO: Automate using https://github.com/terraform-aws-modules/terraform-aws-iam#
 
 -> MFA (IAM->User Administrator->Security Credentials->Assigned MFA device
 
--> "Create IAM Policies That Grant Permissions to Billing Data" (https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_billing.html)
+-> "Create IAM Policies That Grant Permissions to Billing Data" (https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_billing.html) # I think it's now replaced with terraform code
 
- Create  BillingFullAccess and BillingViewAccess Policy
+ Create  BillingFullAccess and BillingViewAccess Policy # I think it's now replaced with terraform code
 
- Attach BillingFullAccess to Administrators Group
+ Attach BillingFullAccess to Administrators Group # I think it's now replaced with terraform code
 
 Budget (https://aws.amazon.com/getting-started/tutorials/control-your-costs-free-tier-budgets/)
 
--> Enable all billing alerts https://console.aws.amazon.com/billing/home?#/preferences
-
+-> Enable billing alerts https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/monitor_estimated_charges_with_cloudwatch.html#turning_on_billing_metrics
 
 TODO: IAM password policy
 
-TODO: Check how much of this can be replaced with https://registry.terraform.io/modules/terraform-aws-modules
-
 ### Account alias
+
+Set up in `global/account/account.tf`
+
+See also
 
 https://docs.aws.amazon.com/IAM/latest/UserGuide/console_account-alias.html
 
@@ -69,44 +70,9 @@ or
 
 https://www.terraform.io/docs/providers/aws/r/iam_account_alias.html
 
-### Create read only group
+### User setup
 
-Create group `ReadOnly`.
-
-Policies:
-* `arn:aws:iam::aws:policy/ReadOnlyAccess`
-* `arn:aws:iam::<your-account-id>:policy/BillingViewAccess`
-
-### Create dev user
-
-`dev-<username>` with console and access token access
-
-Add to `ReadOnly` group.
-
-Install [aws-vault](https://github.com/99designs/aws-vault/).
-
-Use `aws-vault add <account-alias>` to add access key
-
-Login as `dev-<username>`
-Enable MFA
-
-### Create role to assume
-
-Create role `AdminRole` with policy `AdministratorAccess`.
-
-Create policy `AssumeAdminRole`
-
-    {
-        "Version": "2012-10-17",
-        "Statement": {
-            "Effect": "Allow",
-            "Action": "sts:AssumeRole",
-            "Resource": "arn:aws:iam::<your-account-id>:role/AdminRole"
-        }
-    }
-
-Create group `Sudo` with `AssumeAdminRole` policy
-Attach `Sudo` group to `dev-<username>`
+Set up in `global/account/user.tf`
 
 Setup aws-vault as described in `ubuntuInstall.txt`.
 
@@ -119,18 +85,6 @@ To work locally with AWS you can start an [EC2 Instance Metadata Service](https:
 ## terraform
 
 https://registry.terraform.io/providers/hashicorp/aws/latest/docs
-
-## Serverless Framework
-
-https://alligator.io/serverless/up-and-running-with-serverless/
-
-    yarn global add serverless
-
-https://github.com/baztian/serverless-hello-world
-
-    $ aws-vault exec dev@<account-alias> -- ~/.yarn/bin/serverless deploy
-    $ curl https://oqwycu31j0.execute-api.us-west-2.amazonaws.com/dev/hello
-    $ aws-vault exec dev@<account-alias> -- ~/.yarn/bin/serverless remove
 
 ## Auto Shutdown and Start Amazon EC2 Instance
 
