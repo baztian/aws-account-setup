@@ -8,6 +8,10 @@ variable "currency" {
   type = string
   default = "EUR"
 }
+variable "budget_notification_emails" {
+  description = "To which e-mail adresses the notifications should be sent."
+  type = list(string)
+}
 variable "tags" {
   type        = map(string)
   description = "A mapping of tags to assign to all resources"

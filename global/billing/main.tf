@@ -3,6 +3,7 @@ provider "aws" {
   version = "~> 2.0"
   region = "eu-central-1"
 }
+
 resource "aws_budgets_budget" "total_cost" {
   name = "total-costs"
   budget_type = "COST"
@@ -10,4 +11,11 @@ resource "aws_budgets_budget" "total_cost" {
   limit_unit = "USD"
   time_unit = "MONTHLY"
   time_period_start = "2019-01-01_00:00"
+  notification {
+    comparison_operator = "GREATER_THAN"
+    threshold = 100
+    threshold_type = "PERCENTAGE"
+    notification_type = "FORECASTED"
+    subscriber_email_addresses = var.budget_notification_emails
+  }
 }
