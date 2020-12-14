@@ -196,10 +196,11 @@ module "alb" {
       backend_port     = 80
       target_type      = "instance"
       health_check = {
-        # wiremock return 403 by default for /
-        # and 302 for /__admin
+        # wiremock return 403 by default for / but it depends on
+        # the stubbing configuration
+        # For /__admin it will return 302
         path    = "/__admin"
-        matcher = "200-399"
+        matcher = "302"
       }
     }
   ]

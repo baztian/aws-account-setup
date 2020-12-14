@@ -65,6 +65,13 @@ resource "aws_lb_target_group" "http_target_group" {
   port = 81
   target_type = "instance"
   vpc_id = data.aws_vpc.default.id
+  health_check {
+    # wiremock return 403 by default for / but it depends on
+    # the stubbing configuration
+    # For /__admin it will return 302
+    path    = "/__admin"
+    matcher = "302"
+  }
 }
 
 resource "aws_lb_listener_rule" "http_forward_rule" {
