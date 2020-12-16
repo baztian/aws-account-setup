@@ -8,3 +8,7 @@ variable "environment" {
   type = string
   default = "dev"
 }
+variable "ssh_public_key" {
+  description = "SSH public key for EC2 instance access"
+  default = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDkDeDy0noq26Op+EikCXBh0ruIugAVv/5rXE/0obCwUMN3i9ZEiXdZ9YD8lZqlkt7LcqhtpuehJbTM6IYM4CkiXEyeD/GJHSlF/K3atAEefo48/QhPye+VzKwp77/7i1rw6Qpeu+Rhuf2ttF50cxOQdzkGH5s3HaPS3uVd4cRj8Yr9JPYPrXarwGSObJA9/ksjd9+Uqf2n4CmOItHccGl9sSiUbmS1RRiFrKxiDgh8QY0DbiO9m3u3B2riEcudMGfZnG7URh44RGPuJ/BM9ZTEHRbtdkOBz9JzbvMlvc/+27lYRPqxLRlo8xoB7q+jg/OqALni/MoeWeQcGOe7LCkX me@desktop"
+}
