@@ -11,8 +11,8 @@ data "aws_subnet_ids" "all" {
 }
 
 locals {
-  name        = "complete-ecs"
-  environment = "dev"
+  name        = var.cluster_name
+  environment = var.environment
 
   # This is the convention we use to know what belongs to each other
   ec2_resources_name = "${local.name}-${local.environment}"
@@ -45,6 +45,7 @@ module "ec2_profile" {
   source = "terraform-aws-modules/ecs/aws//modules/ecs-instance-profile"
 
   name = local.name
+  include_ssm = true
 
   tags = {
     Environment = local.environment
@@ -97,6 +98,15 @@ resource "aws_security_group" "ecs_cluster_sg" {
   }
 }
 
+resource "aws_key_pair" "key_pair" {
+  key_name = "${var.cluster_name}-${var.environment}"
+  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDkDeDy0noq26Op+EikCXBh0ruIugAVv/5rXE/0obCwUMN3i9ZEiXdZ9YD8lZqlkt7LcqhtpuehJbTM6IYM4CkiXEyeD/GJHSlF/K3atAEefo48/QhPye+VzKwp77/7i1rw6Qpeu+Rhuf2ttF50cxOQdzkGH5s3HaPS3uVd4cRj8Yr9JPYPrXarwGSObJA9/ksjd9+Uqf2n4CmOItHccGl9sSiUbmS1RRiFrKxiDgh8QY0DbiO9m3u3B2riEcudMGfZnG7URh44RGPuJ/BM9ZTEHRbtdkOBz9JzbvMlvc/+27lYRPqxLRlo8xoB7q+jg/OqALni/MoeWeQcGOe7LCkX me@desktop"
+
+  tags = {
+    Environment = local.environment
+  }
+}
+
 module "asg" {
   source  = "terraform-aws-modules/autoscaling/aws"
   version = "~> 3.0"
@@ -111,6 +121,7 @@ module "asg" {
   security_groups      = [aws_security_group.ecs_cluster_sg.id]
   iam_instance_profile = module.ec2_profile.this_iam_instance_profile_id
   user_data            = data.template_file.user_data.rendered
+  key_name = aws_key_pair.key_pair.key_name
 
   # Auto scaling group
   asg_name                  = local.ec2_resources_name
