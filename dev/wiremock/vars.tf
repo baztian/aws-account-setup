@@ -13,3 +13,6 @@ variable "hosted_zone_name" {
     type = string
     default = "twenty.zonny.de"
 }
+variable "wiremock_admin_password" {
+    description = "Password to access the admin api for wiremock"
+}

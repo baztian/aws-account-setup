@@ -23,6 +23,7 @@ resource aws_security_group_rule "simple_app_sg_rule" {
   source_security_group_id = var.source_security_group_id
 }
 
+
 resource "aws_ecs_task_definition" "wiremock" {
   family = "wiremock"
 
@@ -42,7 +43,7 @@ resource "aws_ecs_task_definition" "wiremock" {
     ],
     "command": [
         "--admin-api-basic-auth",
-        "admin:swordfish"
+        "admin:${var.wiremock_admin_password}"
     ],
     "logConfiguration": {
       "logDriver": "awslogs",
