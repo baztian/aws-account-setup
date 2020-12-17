@@ -1,8 +1,6 @@
 data "aws_iam_account_alias" "current" {}
 
-# CloudWatch billing alerts must be in US-EAST-1
 provider "aws" {
-  version = "~> 2.0"
   region = "eu-central-1"
 }
 
