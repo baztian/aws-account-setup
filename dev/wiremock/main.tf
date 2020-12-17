@@ -42,6 +42,7 @@ data "aws_subnet_ids" "all" {
 
 module "alb_sg" {
   source = "terraform-aws-modules/security-group/aws"
+  version = "~> 3.17"
 
   name        = "alb-sg"
   description = "Security group with HTTP(s) ports open for everybody (IPv4+v6 CIDR), egress ports are all world open"
@@ -118,7 +119,7 @@ data "aws_ami" "amazon_linux" {
 ######
 module "example_asg" {
   source  = "terraform-aws-modules/autoscaling/aws"
-  version = "~> 3.0"
+  version = "~> 3.8"
 
   name = "example-with-alb"
 
@@ -181,7 +182,7 @@ module "example_asg" {
 ######
 module "alb" {
   source  = "terraform-aws-modules/alb/aws"
-  version = "~> 5.0"
+  version = "~> 5.10"
 
   name = "alb-example"
 

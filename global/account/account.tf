@@ -1,6 +1,6 @@
 module "iam_account" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-account"
-  version = "~> 2.0"
+  version = "~> 3.6"
 
   account_alias = "devbabowe2020"
 

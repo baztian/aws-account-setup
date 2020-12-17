@@ -1,6 +1,6 @@
 module "iam_user" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-user"
-  version = "~> 2.0"
+  version = "~> 3.6"
 
   name          = "dev-babowe"
   # gpg --list-keys
@@ -36,7 +36,7 @@ data "aws_caller_identity" "current" {}
 
 module "iam_assumable_roles" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-roles"
-  version = "~> 2.0"
+  version = "~> 3.6"
 
   trusted_role_arns = [
     "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root",
@@ -53,7 +53,7 @@ module "iam_assumable_roles" {
 
 module "iam_group_with_assumable_roles_policy" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-group-with-assumable-roles-policy"
-  version = "~> 2.0"
+  version = "~> 3.6"
 
   name = "developers"
 

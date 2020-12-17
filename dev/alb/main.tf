@@ -15,6 +15,7 @@ data "aws_subnet_ids" "all" {
 
 module "alb_sg" {
   source = "terraform-aws-modules/security-group/aws"
+  version = "~> 3.17"
 
   name        = "alb-sg"
   description = "Security group with HTTP(s) ports open for everybody (IPv4+v6 CIDR), egress ports are all world open"
