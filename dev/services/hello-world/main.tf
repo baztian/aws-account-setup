@@ -2,6 +2,10 @@ provider "aws" {
   region = "eu-central-1"
 }
 
+locals {
+  name = "helloworld"
+}
+
 data "aws_region" "current" {}
 
 data "aws_vpc" "default" {
@@ -9,7 +13,7 @@ data "aws_vpc" "default" {
 }
 
 resource "aws_cloudwatch_log_group" "hello_world" {
-  name              = "hello_world"
+  name              = local.name
   retention_in_days = 1
 }
 
@@ -24,12 +28,12 @@ resource aws_security_group_rule "simple_app_sg_rule" {
 }
 
 resource "aws_ecs_task_definition" "hello_world" {
-  family = "hello_world"
+  family = local.name
 
   container_definitions = <<EOF
 [
   {
-    "name": "simple-app",
+    "name": "${local.name}",
     "image": "httpd:2.4",
     "cpu": 0,
     "memory": 300,
@@ -51,7 +55,7 @@ resource "aws_ecs_task_definition" "hello_world" {
       "logDriver": "awslogs",
       "options": {
         "awslogs-region": "${data.aws_region.current.name}",
-        "awslogs-group": "hello_world",
+        "awslogs-group": "${local.name}",
         "awslogs-stream-prefix": "complete-ecs"
       }
     }
@@ -61,7 +65,7 @@ EOF
 }
 
 resource "aws_lb_target_group" "http_target_group" {
-  name_prefix = "pref-"
+  name = "${local.name}-target-group"
   # protocol used by the target
   protocol = "HTTP"
   # port exposed by the target
@@ -81,7 +85,7 @@ resource "aws_lb_listener_rule" "http_forward_rule" {
 
   condition {
     host_header {
-      values = ["sample-app.twenty.zonny.de"]
+      values = ["${local.name}.twenty.zonny.de"]
     }
   }
 }
@@ -97,13 +101,13 @@ resource "aws_lb_listener_rule" "https_forward_rule" {
 
   condition {
     host_header {
-      values = ["sample-app.twenty.zonny.de"]
+      values = ["${local.name}.twenty.zonny.de"]
     }
   }
 }
 
 resource "aws_ecs_service" "hello_world" {
-  name            = "hello_world"
+  name            = local.name
   cluster         = var.cluster_id
   task_definition = aws_ecs_task_definition.hello_world.arn
 
@@ -114,7 +118,7 @@ resource "aws_ecs_service" "hello_world" {
 
   load_balancer {
     target_group_arn = aws_lb_target_group.http_target_group.arn
-    container_name = "simple-app"
+    container_name = local.name
     container_port = 80
   }
 }
