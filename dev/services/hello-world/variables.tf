@@ -1,10 +1,10 @@
-variable "cluster_id" {
-  description = "The ECS cluster ID"
+variable "cluster_name" {
+  description = "The ECS cluster name"
   type        = string
+  default = "complete-ecs"
 }
-variable "alb_http_listener_arn" {
-  description = "ARN of the ALB HTTP listener to which we will assign a listener rule to forward to this service."
-}
-variable "alb_https_listener_arn" {
-  description = "ARN of the ALB HTTPS listener to which we will assign a listener rule to forward to this service."
+variable "alb_name" {
+  description = "Name of this ALB to which we will assign a listener rule to forward to this service."
+  type = string
+  default = "www"
 }
