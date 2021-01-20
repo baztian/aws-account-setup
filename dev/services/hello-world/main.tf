@@ -17,16 +17,6 @@ resource "aws_cloudwatch_log_group" "hello_world" {
   retention_in_days = 1
 }
 
-resource aws_security_group_rule "simple_app_sg_rule" {
-  description = "Allow HTTP traffic to simple-app"
-  type = "ingress"
-  from_port   = 80
-  to_port     = 80
-  protocol    = "tcp"
-  security_group_id = var.ecs_cluster_security_group_id
-  source_security_group_id = var.source_security_group_id
-}
-
 resource "aws_ecs_task_definition" "hello_world" {
   family = local.name
 
@@ -43,7 +33,7 @@ resource "aws_ecs_task_definition" "hello_world" {
     ],
     "portMappings": [
         {
-            "hostPort": 80,
+            "hostPort": 0,
             "protocol": "tcp",
             "containerPort": 80
         }

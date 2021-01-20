@@ -14,6 +14,11 @@ locals {
   name        = var.cluster_name
   environment = var.environment
 
+  # See https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_PortMapping.html
+  # regarding the "ephemeral port range"
+  ephemeral_port_from = 32768
+  ephemeral_port_to = 65535
+
   # This is the convention we use to know what belongs to each other
   ec2_resources_name = "${local.name}-${local.environment}"
 }
@@ -98,6 +103,16 @@ resource "aws_security_group" "ecs_cluster_sg" {
   tags = {
     Name = "ecs-cluster-sg"
   }
+}
+
+resource aws_security_group_rule "cluster_services_sg_rule" {
+  description = "Allow traffic to the services of the cluster that are in the ephemeral port range"
+  type = "ingress"
+  from_port   = local.ephemeral_port_from
+  to_port     = local.ephemeral_port_to
+  protocol    = "tcp"
+  security_group_id = aws_security_group.ecs_cluster_sg.id
+  source_security_group_id = var.source_security_group_id
 }
 
 resource "aws_key_pair" "key_pair" {

@@ -17,16 +17,6 @@ resource "aws_cloudwatch_log_group" "wiremock" {
   retention_in_days = 1
 }
 
-resource aws_security_group_rule "simple_app_sg_rule" {
-  description = "Allow HTTP traffic to simple-app"
-  type = "ingress"
-  from_port   = 81
-  to_port     = 81
-  protocol    = "tcp"
-  security_group_id = var.ecs_cluster_security_group_id
-  source_security_group_id = var.source_security_group_id
-}
-
 resource "aws_ecs_task_definition" "wiremock" {
   family = local.name
 
@@ -39,7 +29,7 @@ resource "aws_ecs_task_definition" "wiremock" {
     "memory": 300,
     "portMappings": [
         {
-            "hostPort": 81,
+            "hostPort": 0,
             "protocol": "tcp",
             "containerPort": 8080
         }
@@ -66,7 +56,7 @@ resource "aws_lb_target_group" "http_target_group" {
   # protocol used by the target
   protocol = "HTTP"
   # port exposed by the target
-  port = 81
+  port = 80
   target_type = "instance"
   vpc_id = data.aws_vpc.default.id
   health_check {
