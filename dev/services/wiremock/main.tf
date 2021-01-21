@@ -2,8 +2,15 @@ provider "aws" {
   region = "eu-central-1"
 }
 
+provider "docker" {
+}
+data "docker_registry_image" "wiremock" {
+  name = local.image
+}
+
 locals {
   name = "wiremock"
+  image = "rodolpheche/wiremock:2.27.2"
 }
 
 data "aws_region" "current" {}
@@ -24,7 +31,7 @@ resource "aws_ecs_task_definition" "wiremock" {
 [
   {
     "name": "${local.name}",
-    "image": "rodolpheche/wiremock",
+    "image": "${local.image}@${data.docker_registry_image.wiremock.sha256_digest}",
     "cpu": 0,
     "memory": 300,
     "portMappings": [
@@ -49,6 +56,9 @@ resource "aws_ecs_task_definition" "wiremock" {
   }
 ]
 EOF
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_lb_target_group" "http_target_group" {
@@ -126,7 +136,7 @@ resource "aws_ecs_service" "wiremock" {
 
   desired_count = 1
 
-  deployment_maximum_percent         = 100
+  deployment_maximum_percent         = 200
   deployment_minimum_healthy_percent = 0
 
   load_balancer {
@@ -134,4 +144,12 @@ resource "aws_ecs_service" "wiremock" {
     container_name = local.name
     container_port = 8080
   }
+
+  # work around https://github.com/hashicorp/terraform-provider-aws/issues/11351
+  lifecycle {
+    ignore_changes = [
+      capacity_provider_strategy
+    ]
+  }
+
 }
