@@ -6,7 +6,14 @@ locals {
   user_data = <<EOF
 #!/bin/bash -xe
 #export PATH=/usr/local/bin:$PATH;
-whoami
+
+# Setup 2 GB swap file
+# https://aws.amazon.com/premiumsupport/knowledge-center/ec2-memory-swap-file/
+dd if=/dev/zero of=/swapfile bs=128M count=16
+chmod 600 /swapfile
+mkswap /swapfile
+echo /swapfile swap swap defaults 0 0 >> /etc/fstab
+swapon -a
 
 yum update -y
 amazon-linux-extras install docker -y
@@ -40,23 +47,66 @@ data "aws_subnet_ids" "all" {
   vpc_id = data.aws_vpc.default.id
 }
 
-module "alb_sg" {
-  source = "terraform-aws-modules/security-group/aws"
-  version = "~> 3.17"
+resource "aws_lb_target_group" "http_target_group" {
+  name = "${var.service_name}-target-group"
+  # protocol used by the target
+  protocol = "HTTP"
+  # port exposed by the target
+  port = 80
+  target_type = "instance"
+  vpc_id = data.aws_vpc.default.id
+  health_check {
+    # wiremock return 403 by default for / but it depends on
+    # the stubbing configuration
+    # For /__admin it will return 302
+    path    = "/__admin"
+    matcher = "302"
+  }
+}
 
-  name        = "alb-sg"
-  description = "Security group with HTTP(s) ports open for everybody (IPv4+v6 CIDR), egress ports are all world open"
-  vpc_id      = data.aws_vpc.default.id
+data "aws_lb" "www_lb" {
+  name = var.alb_name
+}
 
-  ingress_cidr_blocks = ["0.0.0.0/0"]
-  ingress_ipv6_cidr_blocks = ["::/0"]
-  ingress_rules            = ["http-80-tcp","https-443-tcp"]
-  ingress_with_self = [
-    {
-      rule = "all-all"
-    },
-  ]
-  egress_rules      = ["all-all"]
+data "aws_lb_listener" "www_http" {
+  load_balancer_arn = data.aws_lb.www_lb.arn
+  port = 80
+}
+
+resource "aws_lb_listener_rule" "http_forward_rule" {
+  listener_arn = data.aws_lb_listener.www_http.arn
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.http_target_group.arn
+  }
+
+  condition {
+    host_header {
+      values = ["${var.service_name}.twenty.zonny.de"]
+    }
+  }
+}
+
+
+data "aws_lb_listener" "www_https" {
+  load_balancer_arn = data.aws_lb.www_lb.arn
+  port = 443
+}
+
+resource "aws_lb_listener_rule" "https_forward_rule" {
+  listener_arn = data.aws_lb_listener.www_https.arn
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.http_target_group.arn
+  }
+
+  condition {
+    host_header {
+      values = ["${var.service_name}.twenty.zonny.de"]
+    }
+  }
 }
 
 resource "aws_security_group" "web_service_sg" {
@@ -69,7 +119,7 @@ resource "aws_security_group" "web_service_sg" {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    security_groups = [module.alb_sg.this_security_group_id]
+    security_groups = data.aws_lb.www_lb.security_groups
   }
 
   ingress {
@@ -77,7 +127,7 @@ resource "aws_security_group" "web_service_sg" {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
-    security_groups = [module.alb_sg.this_security_group_id]
+    security_groups = data.aws_lb.www_lb.security_groups
   }
 
   egress {
@@ -121,14 +171,14 @@ module "example_asg" {
   source  = "terraform-aws-modules/autoscaling/aws"
   version = "~> 3.8"
 
-  name = "example-with-alb"
+  name = "${var.service_name}-with-alb"
 
   # Launch configuration
   #
   # launch_configuration = "my-existing-launch-configuration" # Use the existing launch configuration
   # create_lc = false # disables creation of launch configuration
-  lc_name = "example-lc"
-  target_group_arns = module.alb.target_group_arns
+  lc_name = "${var.service_name}-lc"
+  target_group_arns = [ aws_lb_target_group.http_target_group.arn ]
 
   iam_instance_profile = aws_iam_instance_profile.instance_profile.name
   image_id             = data.aws_ami.amazon_linux.id
@@ -137,19 +187,11 @@ module "example_asg" {
 
   user_data_base64 = base64encode(local.user_data)
 
-  ebs_block_device = [
-    {
-      device_name           = "/dev/xvdz"
-      volume_type           = "gp2"
-      volume_size           = "50"
-      delete_on_termination = true
-    },
-  ]
-
   root_block_device = [
     {
-      volume_size = "50"
+      volume_size = "20"
       volume_type = "gp2"
+      delete_on_termination = true
     },
   ]
 
@@ -169,64 +211,7 @@ module "example_asg" {
       value               = "dev"
       propagate_at_launch = true
     },
-    {
-      key                 = "Project"
-      value               = "megasecret"
-      propagate_at_launch = true
-    },
   ]
-}
-
-######
-# ALB
-######
-module "alb" {
-  source  = "terraform-aws-modules/alb/aws"
-  version = "~> 5.10"
-
-  name = "alb-example"
-
-  vpc_id          = data.aws_vpc.default.id
-  subnets         = data.aws_subnet_ids.all.ids
-  security_groups = [module.alb_sg.this_security_group_id]
-
-  target_groups = [
-    {
-      name_prefix      = "pref-"
-      backend_protocol = "HTTP"
-      backend_port     = 80
-      target_type      = "instance"
-      health_check = {
-        # wiremock return 403 by default for / but it depends on
-        # the stubbing configuration
-        # For /__admin it will return 302
-        path    = "/__admin"
-        matcher = "302"
-      }
-    }
-  ]
-
-  https_listeners = [
-    {
-      port               = 443
-      protocol           = "HTTPS"
-      certificate_arn    = data.aws_acm_certificate.issued.arn
-      target_group_index = 0
-    }
-  ]
-
-  http_tcp_listeners = [
-    {
-      port     = 80
-      protocol = "HTTP"
-      target_group_index = 0
-    },
-  ]
-
-  tags = {
-    Owner       = "user"
-    Environment = "dev"
-  }
 }
 
 # SessionManager

@@ -13,5 +13,5 @@ output "this_autoscaling_group_id" {
 # ALB DNS name
 output "this_lb_dns_name" {
   description = "DNS Name of the LB"
-  value       = module.alb.this_lb_dns_name
+  value       = data.aws_lb.www_lb.dns_name
 }
