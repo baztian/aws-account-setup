@@ -89,7 +89,6 @@ data "aws_lb_listener" "www_http" {
 
 resource "aws_lb_listener_rule" "http_forward_rule" {
   listener_arn = data.aws_lb_listener.www_http.arn
-  priority     = 99
 
   action {
     type             = "forward"
@@ -111,7 +110,6 @@ data "aws_lb_listener" "www_https" {
 
 resource "aws_lb_listener_rule" "https_forward_rule" {
   listener_arn = data.aws_lb_listener.www_https.arn
-  priority     = 99
 
   action {
     type             = "forward"

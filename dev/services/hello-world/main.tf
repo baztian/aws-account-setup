@@ -52,6 +52,9 @@ resource "aws_ecs_task_definition" "hello_world" {
   }
 ]
 EOF
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_lb_target_group" "http_target_group" {
@@ -76,7 +79,6 @@ data "aws_lb_listener" "www_http" {
 
 resource "aws_lb_listener_rule" "http_forward_rule" {
   listener_arn = data.aws_lb_listener.www_http.arn
-  priority     = 100
 
   action {
     type             = "forward"
@@ -98,7 +100,6 @@ data "aws_lb_listener" "www_https" {
 
 resource "aws_lb_listener_rule" "https_forward_rule" {
   listener_arn = data.aws_lb_listener.www_https.arn
-  priority     = 100
 
   action {
     type             = "forward"
@@ -131,4 +132,12 @@ resource "aws_ecs_service" "hello_world" {
     container_name = local.name
     container_port = 80
   }
+
+  # work around https://github.com/hashicorp/terraform-provider-aws/issues/11351
+  lifecycle {
+    ignore_changes = [
+      capacity_provider_strategy
+    ]
+  }
+
 }
