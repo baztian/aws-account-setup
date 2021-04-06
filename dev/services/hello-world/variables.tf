@@ -4,7 +4,7 @@ variable "cluster_name" {
   default = "complete-ecs"
 }
 variable "alb_name" {
-  description = "Name of this ALB to which we will assign a listener rule to forward to this service."
+  description = "Name of the ALB to which we will assign a listener rule to forward to this service."
   type = string
   default = "www"
 }

@@ -20,7 +20,7 @@ data "aws_vpc" "default" {
 }
 
 resource "aws_cloudwatch_log_group" "wiremock" {
-  name              = local.name
+  name              = "${local.name}-${var.environment}"
   retention_in_days = 1
 }
 
@@ -30,7 +30,7 @@ resource "aws_ecs_task_definition" "wiremock" {
   container_definitions = <<EOF
 [
   {
-    "name": "${local.name}",
+    "name": "${local.name}-${var.environment}",
     "image": "${local.image}@${data.docker_registry_image.wiremock.sha256_digest}",
     "cpu": 0,
     "memory": 300,
@@ -49,7 +49,7 @@ resource "aws_ecs_task_definition" "wiremock" {
       "logDriver": "awslogs",
       "options": {
         "awslogs-region": "${data.aws_region.current.name}",
-        "awslogs-group": "${local.name}",
+        "awslogs-group": "${local.name}-${var.environment}",
         "awslogs-stream-prefix": "complete-ecs"
       }
     }
@@ -59,10 +59,13 @@ EOF
   lifecycle {
     create_before_destroy = true
   }
+  tags = {
+    Environment = var.environment
+  }
 }
 
 resource "aws_lb_target_group" "http_target_group" {
-  name = "${local.name}-target-group"
+  name = "${local.name}-${var.environment}-target-group"
   # protocol used by the target
   protocol = "HTTP"
   # port exposed by the target
@@ -75,6 +78,9 @@ resource "aws_lb_target_group" "http_target_group" {
     # For /__admin it will return 302
     path    = "/__admin"
     matcher = "302"
+  }
+  tags = {
+    Environment = var.environment
   }
 }
 
@@ -97,7 +103,7 @@ resource "aws_lb_listener_rule" "http_forward_rule" {
 
   condition {
     host_header {
-      values = ["${local.name}.twenty.zonny.de"]
+      values = ["${local.name}-${var.environment}.twenty.zonny.de"]
     }
   }
 }
@@ -118,7 +124,7 @@ resource "aws_lb_listener_rule" "https_forward_rule" {
 
   condition {
     host_header {
-      values = ["${local.name}.twenty.zonny.de"]
+      values = ["${local.name}-${var.environment}.twenty.zonny.de"]
     }
   }
 }
@@ -128,7 +134,7 @@ data "aws_ecs_cluster" "ecs_cluster" {
 }
 
 resource "aws_ecs_service" "wiremock" {
-  name            = local.name
+  name            = "${local.name}-${var.environment}"
   cluster         = data.aws_ecs_cluster.ecs_cluster.cluster_name
   task_definition = aws_ecs_task_definition.wiremock.arn
 
@@ -139,7 +145,7 @@ resource "aws_ecs_service" "wiremock" {
 
   load_balancer {
     target_group_arn = aws_lb_target_group.http_target_group.arn
-    container_name = local.name
+    container_name = "${local.name}-${var.environment}"
     container_port = 8080
   }
 
@@ -148,6 +154,9 @@ resource "aws_ecs_service" "wiremock" {
     ignore_changes = [
       capacity_provider_strategy
     ]
+  }
+  tags = {
+    Environment = var.environment
   }
 
 }
