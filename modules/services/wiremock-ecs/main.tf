@@ -33,7 +33,8 @@ resource "aws_ecs_task_definition" "wiremock" {
     "name": "${local.name}-${var.environment}",
     "image": "${local.image}@${data.docker_registry_image.wiremock.sha256_digest}",
     "cpu": 0,
-    "memory": 300,
+    "memory": 100,
+    "memoryReservation": 20,
     "portMappings": [
         {
             "hostPort": 0,
