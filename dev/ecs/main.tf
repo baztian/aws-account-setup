@@ -30,7 +30,7 @@ data "aws_availability_zones" "available" {
 #----- ECS --------
 module "ecs" {
   source = "terraform-aws-modules/ecs/aws"
-  version = "~> 2.5"
+  version = "~> 2.8"
 
   name               = local.name
   container_insights = true
@@ -49,7 +49,7 @@ module "ecs" {
 
 module "ec2_profile" {
   source = "terraform-aws-modules/ecs/aws//modules/ecs-instance-profile"
-  version = "~> 2.5"
+  version = "~> 2.8"
 
   name = local.name
   include_ssm = true
