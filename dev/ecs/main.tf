@@ -141,6 +141,15 @@ module "asg" {
   user_data            = data.template_file.user_data.rendered
   key_name = aws_key_pair.key_pair.key_name
 
+  root_block_device = [
+    {
+      volume_size = 20
+      volume_type = "gp2"
+      delete_on_termination = true
+      encrypted = true
+    },
+  ]
+
   # Auto scaling group
   asg_name                  = local.ec2_resources_name
   vpc_zone_identifier       = data.aws_subnet_ids.all.ids

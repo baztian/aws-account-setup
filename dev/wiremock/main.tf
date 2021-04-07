@@ -189,9 +189,10 @@ module "example_asg" {
 
   root_block_device = [
     {
-      volume_size = "20"
+      volume_size = 8
       volume_type = "gp2"
       delete_on_termination = true
+      encrypted = true
     },
   ]
 
