@@ -11,7 +11,7 @@ data "aws_subnet_ids" "all" {
 }
 
 locals {
-  name        = var.cluster_name
+  name        = "${var.cluster_name}-${var.environment}"
   environment = var.environment
 
   # See https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_PortMapping.html
@@ -20,7 +20,7 @@ locals {
   ephemeral_port_to = 65535
 
   # This is the convention we use to know what belongs to each other
-  ec2_resources_name = "${local.name}-${local.environment}"
+  ec2_resources_name = local.name
 }
 
 data "aws_availability_zones" "available" {
@@ -35,11 +35,12 @@ module "ecs" {
   name               = local.name
   container_insights = true
 
-  capacity_providers = [aws_ecs_capacity_provider.prov1.name, "FARGATE", "FARGATE_SPOT"]
+  capacity_providers = [aws_ecs_capacity_provider.ec2provider.name, "FARGATE", "FARGATE_SPOT"]
 
   default_capacity_provider_strategy = [
     {
-      capacity_provider = aws_ecs_capacity_provider.prov1.name # EC2
+      capacity_provider = aws_ecs_capacity_provider.ec2provider.name
+      weight = 1
     }
   ]
 
@@ -60,13 +61,12 @@ module "ec2_profile" {
   }
 }
 
-resource "aws_ecs_capacity_provider" "prov1" {
-  name = "prov1"
+resource "aws_ecs_capacity_provider" "ec2provider" {
+  name = "ec2-provider-${local.name}"
 
   auto_scaling_group_provider {
     auto_scaling_group_arn = module.asg.this_autoscaling_group_arn
   }
-
 }
 
 #----- ECS  Resources--------
@@ -89,7 +89,7 @@ data "aws_ami" "amazon_linux_ecs" {
 }
 
 resource "aws_security_group" "ecs_cluster_sg" {
-  name        = "ecs-cluster-sg"
+  name        = "ecs-cluster-sg-${local.name}"
   description = "Security group for the ecs cluster"
 
   egress {
@@ -117,7 +117,7 @@ resource aws_security_group_rule "cluster_services_sg_rule" {
 }
 
 resource "aws_key_pair" "key_pair" {
-  key_name = "${var.cluster_name}-${var.environment}"
+  key_name = local.name
   public_key = var.ssh_public_key
 
   tags = {
@@ -143,7 +143,7 @@ module "asg" {
 
   root_block_device = [
     {
-      volume_size = 20
+      volume_size = 30
       volume_type = "gp2"
       delete_on_termination = true
       encrypted = true
@@ -178,5 +178,6 @@ data "template_file" "user_data" {
 
   vars = {
     cluster_name = local.name
+    disable_metrics = var.ecs_disable_metrics
   }
 }
