@@ -167,7 +167,7 @@ data "aws_ami" "amazon_linux" {
 ######
 # Launch configuration and autoscaling group
 ######
-module "example_asg" {
+module "service_asg" {
   source  = "terraform-aws-modules/autoscaling/aws"
   version = "~> 3.8"
 
@@ -197,7 +197,7 @@ module "example_asg" {
   ]
 
   # Auto scaling group
-  asg_name                  = "example-asg"
+  asg_name                  = "${var.service_name}-asg"
   vpc_zone_identifier       = data.aws_subnet_ids.all.ids
   health_check_type         = "EC2"
   min_size                  = 0
