@@ -14,3 +14,5 @@ swapon -a
   echo "ECS_CLUSTER=${cluster_name}"
   echo "ECS_DISABLE_METRICS=${disable_metrics}"
 } >> /etc/ecs/ecs.config
+
+${additional_user_data}

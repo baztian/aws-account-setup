@@ -114,7 +114,13 @@ module "asg" {
   instance_type        = "t3.micro"
   security_groups      = [aws_security_group.ecs_cluster_sg.id]
   iam_instance_profile = module.ec2_profile.this_iam_instance_profile_id
-  user_data            = data.template_file.user_data.rendered
+  user_data            = templatefile("${path.module}/templates/user-data.sh",
+                                      {
+                                        cluster_name = local.name
+                                        disable_metrics = var.ecs_disable_metrics
+                                        additional_user_data = var.additional_user_data
+                                      }
+                                     )
   key_name = var.key_name
 
   root_block_device = [
@@ -147,13 +153,4 @@ module "asg" {
       propagate_at_launch = true
     },
   ]
-}
-
-data "template_file" "user_data" {
-  template = file("${path.module}/templates/user-data.sh")
-
-  vars = {
-    cluster_name = local.name
-    disable_metrics = var.ecs_disable_metrics
-  }
 }

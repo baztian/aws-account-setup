@@ -26,3 +26,8 @@ variable "ecs_disable_metrics" {
   type = bool
   default = true
 }
+variable "additional_user_data" {
+  description = "Additional user-data shell code to be executed on instence creation"
+  type = string
+  default = ""
+}
