@@ -110,7 +110,7 @@ resource "aws_lb_listener_rule" "https_forward_rule" {
 }
 
 resource "aws_security_group" "web_service_sg" {
-  name        = "web-service-sg"
+  name_prefix = "web-service-sg-"
   description = "Security group for this service that allows being accessed from the ALB"
   vpc_id      = data.aws_vpc.default.id
 

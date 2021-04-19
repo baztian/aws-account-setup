@@ -74,7 +74,7 @@ data "aws_ami" "amazon_linux_ecs" {
 }
 
 resource "aws_security_group" "ecs_cluster_sg" {
-  name        = "ecs-cluster-sg-${local.name}"
+  name_prefix = "ecs-cluster-sg-${local.name}-"
   description = "Security group for the ecs cluster"
 
   egress {
