@@ -22,7 +22,7 @@ resource "aws_cloudwatch_log_group" "wiremock" {
 
 resource "aws_ecs_task_definition" "wiremock" {
   family = "${local.name}-${var.environment}"
-
+  requires_compatibilities = [ "EC2" ]
   container_definitions = <<EOF
 [
   {
