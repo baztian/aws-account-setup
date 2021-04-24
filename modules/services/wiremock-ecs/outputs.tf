@@ -10,3 +10,7 @@ output "image_digest" {
   value = data.docker_registry_image.wiremock.sha256_digest
   description = "SHA256 digest of the image being used for the service"
 }
+output "log_group_name" {
+  value = aws_cloudwatch_log_group.wiremock.name
+  description = "Name of the cloudwatch log group"
+}

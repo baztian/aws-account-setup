@@ -1,7 +1,3 @@
-provider "aws" {
-  region = "eu-central-1"
-}
-
 provider "docker" {
 }
 data "docker_registry_image" "wiremock" {
@@ -21,7 +17,7 @@ data "aws_vpc" "default" {
 
 resource "aws_cloudwatch_log_group" "wiremock" {
   name              = "${local.name}-${var.environment}"
-  retention_in_days = 1
+  retention_in_days = var.log_retention_in_days
 }
 
 resource "aws_ecs_task_definition" "wiremock" {
@@ -72,7 +68,7 @@ resource "aws_lb_target_group" "http_target_group" {
   # port exposed by the target
   port = 80
   target_type = "instance"
-  vpc_id = data.aws_vpc.default.id
+  vpc_id = coalesce(var.alb_vpc_id, data.aws_vpc.default.id)
   health_check {
     # wiremock return 403 by default for / but it depends on
     # the stubbing configuration
