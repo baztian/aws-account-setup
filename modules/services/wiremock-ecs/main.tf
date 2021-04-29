@@ -22,9 +22,12 @@ resource "aws_cloudwatch_log_group" "wiremock" {
 
 resource "aws_ecs_task_definition" "wiremock" {
   family = "${local.name}-${var.environment}"
-  requires_compatibilities = [ "EC2" ]
+  requires_compatibilities = [ "EC2", "FARGATE" ]
   task_role_arn = aws_iam_role.ecs_task_role.arn
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
+  network_mode = "awsvpc"
+  cpu = 256
+  memory = 512
   container_definitions = <<EOF
 [
   {
@@ -35,7 +38,7 @@ resource "aws_ecs_task_definition" "wiremock" {
     "memoryReservation": 20,
     "portMappings": [
         {
-            "hostPort": 0,
+            "hostPort": 8080,
             "protocol": "tcp",
             "containerPort": 8080
         }
@@ -68,8 +71,8 @@ resource "aws_lb_target_group" "http_target_group" {
   # protocol used by the target
   protocol = "HTTP"
   # port exposed by the target
-  port = 80
-  target_type = "instance"
+  port = 8080
+  target_type = "ip"
   vpc_id = coalesce(var.alb_vpc_id, data.aws_vpc.default.id)
   health_check {
     # wiremock return 403 by default for / but it depends on
@@ -132,6 +135,34 @@ data "aws_ecs_cluster" "ecs_cluster" {
   cluster_name = var.cluster_name
 }
 
+resource "aws_security_group" "service_sg" {
+  name_prefix = "service-sg-${local.name}-"
+  description = "Security group for the ${local.name} service"
+
+  egress {
+    description = "Allow all outbound traffic."
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  tags = {
+    Name = "ecs-cluster-sg"
+  }
+}
+
+resource aws_security_group_rule "service_sg_rule" {
+  description = "Allow traffic to the ${local.name} service"
+  type = "ingress"
+  from_port   = 8080
+  to_port     = 8080
+  protocol    = "tcp"
+  security_group_id = aws_security_group.service_sg.id
+  source_security_group_id = var.source_security_group_id
+}
+
 resource "time_sleep" "wait_for_iam_to_be_settled" {
   create_duration = "10s"
 }
@@ -145,6 +176,21 @@ resource "aws_ecs_service" "wiremock" {
 
   deployment_maximum_percent         = 200
   deployment_minimum_healthy_percent = 0
+
+  dynamic "capacity_provider_strategy" {
+    for_each = var.capacity_provider_strategy
+    content {
+      capacity_provider = capacity_provider_strategy.value.capacity_provider
+      weight            = capacity_provider_strategy.value.weight
+      base              = lookup(capacity_provider_strategy.value, "base", null)
+    }
+  }
+
+  network_configuration {
+    security_groups  = [var.source_security_group_id, aws_security_group.service_sg.id]
+    subnets          = var.subnet_ids
+    assign_public_ip = var.assign_public_ip
+  }
 
   load_balancer {
     target_group_arn = aws_lb_target_group.http_target_group.arn

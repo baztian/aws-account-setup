@@ -26,3 +26,25 @@ variable "alb_vpc_id" {
   type = string
   default = null
 }
+variable "source_security_group_id" {
+  description = "Id of the security group that will be allowed to access the ports opened by this cluster. Usually the security group of the ALB."
+  type = string
+}
+variable "subnet_ids" {
+  description = "Ids of the subnets being used for the service"
+  type = list
+}
+variable "assign_public_ip" {
+  description = "Fargate only: Assign a public IP address to the service network interface. Required if you want to run your service without a NAT. Defaults to false."
+  type = string
+  default = null
+}
+variable "capacity_provider_strategy" {
+  description = "Capacity provider strategy for this service. If not specified default capacity provider strategy will be used"
+  type = list(object({
+    capacity_provider = string
+    weight = number
+    base = number
+  }))
+  default = []
+}
