@@ -23,6 +23,8 @@ resource "aws_cloudwatch_log_group" "wiremock" {
 resource "aws_ecs_task_definition" "wiremock" {
   family = "${local.name}-${var.environment}"
   requires_compatibilities = [ "EC2" ]
+  task_role_arn = aws_iam_role.ecs_task_role.arn
+  execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
   container_definitions = <<EOF
 [
   {
@@ -130,6 +132,10 @@ data "aws_ecs_cluster" "ecs_cluster" {
   cluster_name = var.cluster_name
 }
 
+resource "time_sleep" "wait_for_iam_to_be_settled" {
+  create_duration = "10s"
+}
+
 resource "aws_ecs_service" "wiremock" {
   name            = "${local.name}-${var.environment}"
   cluster         = data.aws_ecs_cluster.ecs_cluster.cluster_name
@@ -152,8 +158,8 @@ resource "aws_ecs_service" "wiremock" {
       capacity_provider_strategy
     ]
   }
+  depends_on = [aws_iam_role.ecs_task_role, time_sleep.wait_for_iam_to_be_settled]
   tags = {
     Environment = var.environment
   }
-
 }
