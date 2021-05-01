@@ -1,3 +1,7 @@
+variable "cluster_name" {
+  description = "Name of the ecs cluster for wich this capacity provider is to be created"
+  type = string
+}
 variable "name" {
   description = "Name of the capacity provider. `-<environment>` will be appended"
   type = string

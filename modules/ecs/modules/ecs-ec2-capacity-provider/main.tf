@@ -90,7 +90,7 @@ module "asg" {
   iam_instance_profile = module.ec2_profile.this_iam_instance_profile_id
   user_data            = templatefile("${path.module}/templates/user-data.sh",
   {
-    cluster_name = local.name
+    cluster_name = var.cluster_name
     disable_metrics = var.ecs_disable_metrics
     additional_user_data = var.additional_user_data
   }
@@ -122,13 +122,8 @@ module "asg" {
       propagate_at_launch = true
     },
     {
-      key                 = "EcsCapacityProvider"
-      value               = local.name
-      propagate_at_launch = true
-    },
-    {
-      key                 = "AmazonECSManaged"
-      value               = ""
+      key                 = "Cluster"
+      value               = var.cluster_name
       propagate_at_launch = true
     },
   ]
