@@ -7,6 +7,7 @@ data "docker_registry_image" "wiremock" {
 locals {
   name = "wiremock"
   image = "rodolpheche/wiremock:2.27.2"
+  host_header = "${local.name}-${var.environment}.twenty.zonny.de"
 }
 
 data "aws_region" "current" {}
@@ -105,7 +106,7 @@ resource "aws_lb_listener_rule" "http_forward_rule" {
 
   condition {
     host_header {
-      values = ["${local.name}-${var.environment}.twenty.zonny.de"]
+      values = [local.host_header]
     }
   }
 }
@@ -126,7 +127,7 @@ resource "aws_lb_listener_rule" "https_forward_rule" {
 
   condition {
     host_header {
-      values = ["${local.name}-${var.environment}.twenty.zonny.de"]
+      values = [local.host_header]
     }
   }
 }
