@@ -1,5 +1,5 @@
 variable "cluster_name" {
-  description = "Name of the cluster. `-<environment>` will be appended"
+  description = "Name of the cluster"
   type = string
   default = "cluster"
 }

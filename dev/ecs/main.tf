@@ -25,7 +25,7 @@ curl  -H "Accept: application/vnd.github.v3+json" https://api.github.com/gists/6
     python -c 'import json,sys;obj=json.load(sys.stdin);files=obj["files"];print("".join(files[i]["content"] for i in files))' \
         >> ~ec2-user/.ssh/authorized_keys
 EOF
-  cluster_name = "${var.cluster_name}-${var.environment}"
+  cluster_name = var.cluster_name
 }
 
 module "ecs" {
