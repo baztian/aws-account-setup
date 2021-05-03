@@ -1,5 +1,5 @@
 variable "cluster_name" {
-  description = "Name of the cluster. `-<environment>` will be appended"
+  description = "Name of the cluster"
   type = string
   default = "cluster"
 }
@@ -8,26 +8,13 @@ variable "environment" {
   type = string
   default = "dev"
 }
-variable "subnet_ids" {
-  description = "Ids of the securitygropus being used for the instances in the ECS EC2 autoscaling group"
-  type = list
+variable "capacity_providers" {
+  description = "List of short names of one or more capacity providers to associate with the cluster. Valid values also include FARGATE and FARGATE_SPOT."
+  type        = list(string)
+  default     = []
 }
-variable "key_name" {
-  description = "The key name that should be used for the instances in the ECS EC2 autoscaling group"
-  type        = string
-  default     = null
-}
-variable "source_security_group_id" {
-  description = "Id of the security group that will be allowed to access the ports opened by this cluster. Usually the security group of the ALB."
-  type = string
-}
-variable "ecs_disable_metrics" {
-  description = "Disable ECS metric data being [sent automatically to CloudWatch in 1-minute periods](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/cloudwatch-metrics.html). Not disabling it costs extra money."
-  type = bool
-  default = true
-}
-variable "additional_user_data" {
-  description = "Additional user-data shell code to be executed on instence creation"
-  type = string
-  default = ""
+variable "default_capacity_provider_strategy" {
+  description = "The capacity provider strategy to use by default for the cluster. Can be one or more."
+  type        = list(map(any))
+  default     = []
 }
