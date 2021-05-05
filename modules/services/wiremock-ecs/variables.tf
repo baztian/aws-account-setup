@@ -8,6 +8,11 @@ variable "alb_name" {
   type = string
   default = "www"
 }
+variable "base_domain_name" {
+  description = "Base domain name. Defaults to ALB dns name."
+  type = string
+  default = null
+}
 variable "wiremock_admin_password" {
   description = "Password to access the admin api for wiremock"
 }

@@ -7,7 +7,7 @@ data "docker_registry_image" "wiremock" {
 locals {
   name = "wiremock"
   image = "rodolpheche/wiremock:2.27.2"
-  host_header = "${local.name}-${var.environment}.twenty.zonny.de"
+  host_header = "${local.name}-${var.environment}.${coalesce(var.base_domain_name, data.aws_lb.www_lb.dns_name)}"
 }
 
 data "aws_region" "current" {}

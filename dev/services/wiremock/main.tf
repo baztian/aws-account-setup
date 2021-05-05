@@ -18,6 +18,7 @@ module "wiremock-ecs" {
   source = "../../../modules/services/wiremock-ecs"
   cluster_name = "cluster-dev"
   environment = "dev"
+  base_domain_name = "twenty.zonny.de"
   wiremock_admin_password = var.wiremock_admin_password
   source_security_group_id = data.aws_security_group.source_sg.id
   subnet_ids = data.aws_subnet_ids.all.ids
