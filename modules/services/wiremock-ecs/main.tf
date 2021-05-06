@@ -7,22 +7,25 @@ data "docker_registry_image" "wiremock" {
 locals {
   name = "wiremock"
   image = "rodolpheche/wiremock:2.27.2"
-  host_header = "${local.name}-${var.environment}.${coalesce(var.base_domain_name, data.aws_lb.www_lb.dns_name)}"
+  full_name = "${local.name}-${var.environment}"
+  host_header = "${local.full_name}.${coalesce(var.base_domain_name, data.aws_lb.www_lb.dns_name)}"
 }
 
 data "aws_region" "current" {}
+
+data "aws_caller_identity" "current" {}
 
 data "aws_vpc" "default" {
   default = true
 }
 
 resource "aws_cloudwatch_log_group" "wiremock" {
-  name              = "${local.name}-${var.environment}"
+  name              = local.full_name
   retention_in_days = var.log_retention_in_days
 }
 
 resource "aws_ecs_task_definition" "wiremock" {
-  family = "${local.name}-${var.environment}"
+  family = local.full_name
   requires_compatibilities = [ "EC2", "FARGATE" ]
   task_role_arn = aws_iam_role.ecs_task_role.arn
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
@@ -32,7 +35,7 @@ resource "aws_ecs_task_definition" "wiremock" {
   container_definitions = <<EOF
 [
   {
-    "name": "${local.name}-${var.environment}",
+    "name": "${local.full_name}",
     "image": "${local.image}@${data.docker_registry_image.wiremock.sha256_digest}",
     "cpu": 0,
     "memory": 100,
@@ -52,7 +55,7 @@ resource "aws_ecs_task_definition" "wiremock" {
       "logDriver": "awslogs",
       "options": {
         "awslogs-region": "${data.aws_region.current.name}",
-        "awslogs-group": "${local.name}-${var.environment}",
+        "awslogs-group": "${local.full_name}",
         "awslogs-stream-prefix": "complete-ecs"
       }
     }
@@ -62,13 +65,10 @@ EOF
   lifecycle {
     create_before_destroy = true
   }
-  tags = {
-    Environment = var.environment
-  }
 }
 
 resource "aws_lb_target_group" "http_target_group" {
-  name = "${local.name}-${var.environment}-target-group"
+  name = "${local.full_name}-target-group"
   # protocol used by the target
   protocol = "HTTP"
   # port exposed by the target
@@ -81,9 +81,6 @@ resource "aws_lb_target_group" "http_target_group" {
     # For /__admin it will return 302
     path    = "/__admin"
     matcher = "302"
-  }
-  tags = {
-    Environment = var.environment
   }
 }
 
@@ -169,7 +166,7 @@ resource "time_sleep" "wait_for_iam_to_be_settled" {
 }
 
 resource "aws_ecs_service" "wiremock" {
-  name            = "${local.name}-${var.environment}"
+  name            = local.full_name
   cluster         = data.aws_ecs_cluster.ecs_cluster.cluster_name
   task_definition = aws_ecs_task_definition.wiremock.arn
 
@@ -195,7 +192,7 @@ resource "aws_ecs_service" "wiremock" {
 
   load_balancer {
     target_group_arn = aws_lb_target_group.http_target_group.arn
-    container_name = "${local.name}-${var.environment}"
+    container_name = local.full_name
     container_port = 8080
   }
 
@@ -206,7 +203,4 @@ resource "aws_ecs_service" "wiremock" {
     ]
   }
   depends_on = [aws_iam_role.ecs_task_role, time_sleep.wait_for_iam_to_be_settled]
-  tags = {
-    Environment = var.environment
-  }
 }

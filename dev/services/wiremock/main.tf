@@ -1,5 +1,10 @@
 provider "aws" {
   region = "eu-central-1"
+  default_tags {
+    tags = {
+      Environment = "dev"
+    }
+  }
 }
 
 data "aws_vpc" "default" {
