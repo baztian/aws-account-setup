@@ -13,9 +13,6 @@ variable "base_domain_name" {
   type = string
   default = null
 }
-variable "wiremock_admin_password" {
-  description = "Password to access the admin api for wiremock"
-}
 variable "environment" {
   description = "The (isolated) environment of this service"
   type = string

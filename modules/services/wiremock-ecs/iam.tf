@@ -29,6 +29,15 @@ data "aws_iam_policy_document" "ecs_task_execution_policy_document" {
     ]
     resources = ["*"]
   }
+  statement {
+    sid    = "SsmParameterAccess"
+    actions = [
+      "ssm:GetParameter*"
+    ]
+    resources = [
+      "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/${local.full_name}/*",
+    ]
+  }
 }
 
 # Task container role

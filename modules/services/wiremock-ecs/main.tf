@@ -24,6 +24,25 @@ resource "aws_cloudwatch_log_group" "wiremock" {
   retention_in_days = var.log_retention_in_days
 }
 
+resource "random_password" "wiremock_admin_password" {
+  length = 16
+  special = true
+  min_special = 1
+  override_special = "_%@"
+}
+resource "aws_ssm_parameter" "wiremock_admin_password" {
+  name  = "/${local.full_name}/WIREMOCK_ADMIN_PASSWORD"
+  type  = "SecureString"
+  description = "Password for the wiremock admin user"
+  value = random_password.wiremock_admin_password.result
+  overwrite = false
+  lifecycle {
+    ignore_changes = [
+      value,
+    ]
+  }
+}
+
 resource "aws_ecs_task_definition" "wiremock" {
   family = local.full_name
   requires_compatibilities = [ "EC2", "FARGATE" ]
@@ -47,9 +66,14 @@ resource "aws_ecs_task_definition" "wiremock" {
             "containerPort": 8080
         }
     ],
+    "secrets": [{
+      "name": "WIREMOCK_ADMIN_PASSWORD",
+      "valueFrom": "${aws_ssm_parameter.wiremock_admin_password.arn}"
+    }],
     "command": [
-        "--admin-api-basic-auth",
-        "admin:${var.wiremock_admin_password}"
+        "sh",
+        "-c",
+        "java -cp /var/wiremock/lib/*:/var/wiremock/extensions/* com.github.tomakehurst.wiremock.standalone.WireMockServerRunner --admin-api-basic-auth admin:$${WIREMOCK_ADMIN_PASSWORD}"
     ],
     "logConfiguration": {
       "logDriver": "awslogs",

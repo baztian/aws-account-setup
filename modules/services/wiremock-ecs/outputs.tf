@@ -14,3 +14,7 @@ output "log_group_name" {
   value = aws_cloudwatch_log_group.wiremock.name
   description = "Name of the cloudwatch log group"
 }
+output "wiremock_admin_password" {
+  value = aws_ssm_parameter.wiremock_admin_password.value
+  description = "Password for the wiremock admin user"
+}
