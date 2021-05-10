@@ -3,8 +3,8 @@ variable "alb_name" {
     type = string
     default = "www"
 }
-variable "stage" {
-    description = "Name of the stage where this ALB should get deployed to"
+variable "environment" {
+    description = "Name of the environment where this ALB should get deployed to"
     type = string
     default = "dev"
 }

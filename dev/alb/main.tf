@@ -1,5 +1,10 @@
 provider "aws" {
   region = "eu-central-1"
+  default_tags {
+    tags = {
+      Environment = var.environment
+    }
+  }
 }
 
 ##############################################################
@@ -48,12 +53,11 @@ resource "aws_lb_listener" "http" {
 
   # By default, return a simple 404 page
   default_action {
-    type = "fixed-response"
-
-    fixed_response {
-      content_type = "text/plain"
-      message_body = "404: page not found"
-      status_code = 404
+    type = "redirect"
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
     }
   }
 }
