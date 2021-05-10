@@ -1,14 +1,7 @@
 provider "docker" {
 }
-data "docker_registry_image" "wiremock" {
+data "docker_registry_image" "registry_image" {
   name = local.image
-}
-
-locals {
-  name = "wiremock"
-  image = "rodolpheche/wiremock:2.27.2"
-  full_name = "${local.name}-${var.environment}"
-  host_header = "${local.full_name}.${coalesce(var.base_domain_name, data.aws_lb.www_lb.dns_name)}"
 }
 
 data "aws_region" "current" {}
@@ -19,7 +12,7 @@ data "aws_vpc" "default" {
   default = true
 }
 
-resource "aws_cloudwatch_log_group" "wiremock" {
+resource "aws_cloudwatch_log_group" "cloudwatch_log_group" {
   name              = local.full_name
   retention_in_days = var.log_retention_in_days
 }
@@ -43,7 +36,7 @@ resource "aws_ssm_parameter" "wiremock_admin_password" {
   }
 }
 
-resource "aws_ecs_task_definition" "wiremock" {
+resource "aws_ecs_task_definition" "ecs_task_definition" {
   family = local.full_name
   requires_compatibilities = [ "EC2", "FARGATE" ]
   task_role_arn = aws_iam_role.ecs_task_role.arn
@@ -55,7 +48,7 @@ resource "aws_ecs_task_definition" "wiremock" {
 [
   {
     "name": "${local.full_name}",
-    "image": "${local.image}@${data.docker_registry_image.wiremock.sha256_digest}",
+    "image": "${local.image}@${data.docker_registry_image.registry_image.sha256_digest}",
     "cpu": 0,
     "memory": 100,
     "memoryReservation": 20,
@@ -189,10 +182,10 @@ resource "time_sleep" "wait_for_iam_to_be_settled" {
   create_duration = "10s"
 }
 
-resource "aws_ecs_service" "wiremock" {
+resource "aws_ecs_service" "ecs_service" {
   name            = local.full_name
   cluster         = data.aws_ecs_cluster.ecs_cluster.cluster_name
-  task_definition = aws_ecs_task_definition.wiremock.arn
+  task_definition = aws_ecs_task_definition.ecs_task_definition.arn
 
   desired_count = 1
 
