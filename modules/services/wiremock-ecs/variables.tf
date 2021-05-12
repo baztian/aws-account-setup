@@ -54,7 +54,9 @@ variable "log_retention_in_days" {
 
 locals {
   name = "wiremock"
-  image = "rodolpheche/wiremock:2.27.2"
+  service_image = "rodolpheche/wiremock:2.27.2"
+  ssl_proxy_image = "baztian/nginx-snakeoil:latest"
   full_name = "${local.name}-${var.environment}"
+  ssl_proxy_container_name = "${local.full_name}-ssl-proxy"
   host_header = "${local.full_name}.${coalesce(var.base_domain_name, data.aws_lb.www_lb.dns_name)}"
 }

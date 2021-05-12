@@ -1,7 +1,10 @@
 provider "docker" {
 }
-data "docker_registry_image" "registry_image" {
-  name = local.image
+data "docker_registry_image" "service_registry_image" {
+  name = local.service_image
+}
+data "docker_registry_image" "ssl_proxy_registry_image" {
+  name = local.ssl_proxy_image
 }
 
 data "aws_region" "current" {}
@@ -48,7 +51,7 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
 [
   {
     "name": "${local.full_name}",
-    "image": "${local.image}@${data.docker_registry_image.registry_image.sha256_digest}",
+    "image": "${local.service_image}@${data.docker_registry_image.service_registry_image.sha256_digest}",
     "cpu": 0,
     "memory": 100,
     "memoryReservation": 20,
@@ -73,7 +76,39 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
       "options": {
         "awslogs-region": "${data.aws_region.current.name}",
         "awslogs-group": "${local.full_name}",
-        "awslogs-stream-prefix": "complete-ecs"
+        "awslogs-stream-prefix": "${local.name}"
+      }
+    }
+  },
+  {
+    "name": "${local.ssl_proxy_container_name}",
+    "image": "${local.ssl_proxy_image}@${data.docker_registry_image.ssl_proxy_registry_image.sha256_digest}",
+    "cpu": 0,
+    "memory": 100,
+    "memoryReservation": 20,
+    "portMappings": [
+        {
+            "hostPort": 443,
+            "protocol": "tcp",
+            "containerPort": 443
+        }
+    ],
+    "environment": [
+        {
+            "name": "API_HOST",
+            "value": "localhost"
+        },
+        {
+            "name": "API_PORT",
+            "value": "8080"
+        }
+    ],
+    "logConfiguration": {
+      "logDriver": "awslogs",
+      "options": {
+        "awslogs-region": "${data.aws_region.current.name}",
+        "awslogs-group": "${local.full_name}",
+        "awslogs-stream-prefix": "${local.name}"
       }
     }
   }
@@ -84,15 +119,16 @@ EOF
   }
 }
 
-resource "aws_lb_target_group" "http_target_group" {
+resource "aws_lb_target_group" "lb_target_group" {
   name = "${local.full_name}-target-group"
   # protocol used by the target
-  protocol = "HTTP"
+  protocol = "HTTPS"
   # port exposed by the target
-  port = 8080
+  port = 443
   target_type = "ip"
   vpc_id = coalesce(var.alb_vpc_id, data.aws_vpc.default.id)
   health_check {
+    protocol = "HTTPS"
     # wiremock return 403 by default for / but it depends on
     # the stubbing configuration
     # For /__admin it will return 302
@@ -105,27 +141,6 @@ data "aws_lb" "www_lb" {
   name = var.alb_name
 }
 
-data "aws_lb_listener" "www_http" {
-  load_balancer_arn = data.aws_lb.www_lb.arn
-  port = 80
-}
-
-resource "aws_lb_listener_rule" "http_forward_rule" {
-  listener_arn = data.aws_lb_listener.www_http.arn
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.http_target_group.arn
-  }
-
-  condition {
-    host_header {
-      values = [local.host_header]
-    }
-  }
-}
-
-
 data "aws_lb_listener" "www_https" {
   load_balancer_arn = data.aws_lb.www_lb.arn
   port = 443
@@ -136,7 +151,7 @@ resource "aws_lb_listener_rule" "https_forward_rule" {
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.http_target_group.arn
+    target_group_arn = aws_lb_target_group.lb_target_group.arn
   }
 
   condition {
@@ -171,8 +186,8 @@ resource "aws_security_group" "service_sg" {
 resource aws_security_group_rule "service_sg_rule" {
   description = "Allow traffic to the ${local.name} service"
   type = "ingress"
-  from_port   = 8080
-  to_port     = 8080
+  from_port   = 443
+  to_port     = 443
   protocol    = "tcp"
   security_group_id = aws_security_group.service_sg.id
   source_security_group_id = var.source_security_group_id
@@ -208,9 +223,9 @@ resource "aws_ecs_service" "ecs_service" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.http_target_group.arn
-    container_name = local.full_name
-    container_port = 8080
+    target_group_arn = aws_lb_target_group.lb_target_group.arn
+    container_name = local.ssl_proxy_container_name
+    container_port = 443
   }
 
   # work around https://github.com/hashicorp/terraform-provider-aws/issues/11351
