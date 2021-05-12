@@ -55,13 +55,6 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
     "cpu": 0,
     "memory": 100,
     "memoryReservation": 20,
-    "portMappings": [
-        {
-            "hostPort": 8080,
-            "protocol": "tcp",
-            "containerPort": 8080
-        }
-    ],
     "secrets": [{
       "name": "WIREMOCK_ADMIN_PASSWORD",
       "valueFrom": "${aws_ssm_parameter.wiremock_admin_password.arn}"
