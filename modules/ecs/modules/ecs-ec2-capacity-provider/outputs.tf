@@ -11,6 +11,6 @@ output "ecs_cluster_security_group_id" {
   description = "Id of the security group created for the ecs cluster"
 }
 output "asg_name" {
-  value = module.asg.this_autoscaling_group_name
+  value = module.asg.autoscaling_group_name
   description = "Name of the autoscaling group that got created"
 }

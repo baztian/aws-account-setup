@@ -53,7 +53,7 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
     "name": "${local.full_name}",
     "image": "${local.service_image}@${data.docker_registry_image.service_registry_image.sha256_digest}",
     "cpu": 0,
-    "memory": 100,
+    "memory": 80,
     "memoryReservation": 20,
     "secrets": [{
       "name": "WIREMOCK_ADMIN_PASSWORD",
@@ -77,8 +77,8 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
     "name": "${local.ssl_proxy_container_name}",
     "image": "${local.ssl_proxy_image}@${data.docker_registry_image.ssl_proxy_registry_image.sha256_digest}",
     "cpu": 0,
-    "memory": 100,
-    "memoryReservation": 20,
+    "memory": 10,
+    "memoryReservation": 5,
     "portMappings": [
         {
             "hostPort": 443,

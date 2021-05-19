@@ -10,23 +10,20 @@ locals {
   # This is the convention we use to know what belongs to each other
   ec2_resources_name = local.name
 }
+
 module "ec2_profile" {
   source = "terraform-aws-modules/ecs/aws//modules/ecs-instance-profile"
-  version = "~> 2.8"
+  version = "~> 3.1"
 
   name = local.name
   include_ssm = true
-
-  tags = {
-    Environment = local.environment
-  }
 }
 
 resource "aws_ecs_capacity_provider" "ec2provider" {
   name = local.name
 
   auto_scaling_group_provider {
-    auto_scaling_group_arn = module.asg.this_autoscaling_group_arn
+    auto_scaling_group_arn = module.asg.autoscaling_group_arn
   }
 }
 
@@ -77,17 +74,35 @@ resource aws_security_group_rule "cluster_services_sg_rule" {
 
 module "asg" {
   source  = "terraform-aws-modules/autoscaling/aws"
-  version = "~> 3.8"
+  version = "~> 4.1"
 
   name = "${local.ec2_resources_name}-asg"
 
-  # Launch configuration
-  lc_name = local.ec2_resources_name
+  # Launch template
+  use_lt = true
+  create_lt = true
+  lt_name = local.ec2_resources_name
+  update_default_version = true
+
+  tag_specifications = [
+    {
+      resource_type = "instance"
+      tags = {
+        Environment = var.environment
+      }
+    },
+    {
+      resource_type = "volume"
+      tags = {
+        Environment = var.environment
+      }
+    }
+  ]
 
   image_id             = data.aws_ami.amazon_linux_ecs.id
   instance_type        = var.instance_type
   security_groups      = [aws_security_group.ecs_cluster_sg.id]
-  iam_instance_profile = module.ec2_profile.this_iam_instance_profile_id
+  iam_instance_profile_arn = module.ec2_profile.iam_instance_profile_arn
   user_data            = templatefile("${path.module}/templates/user-data.sh",
   {
     cluster_name = var.cluster_name
@@ -107,7 +122,6 @@ module "asg" {
   ]
 
   # Auto scaling group
-  asg_name                  = local.ec2_resources_name
   vpc_zone_identifier       = var.subnet_ids
   health_check_type         = "EC2"
   min_size                  = var.min_size
