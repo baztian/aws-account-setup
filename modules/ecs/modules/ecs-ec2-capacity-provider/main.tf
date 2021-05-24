@@ -103,12 +103,13 @@ module "asg" {
   instance_type        = var.instance_type
   security_groups      = [aws_security_group.ecs_cluster_sg.id]
   iam_instance_profile_arn = module.ec2_profile.iam_instance_profile_arn
-  user_data            = templatefile("${path.module}/templates/user-data.sh",
+  user_data_base64 = base64encode(templatefile("${path.module}/templates/user-data.sh",
   {
     cluster_name = var.cluster_name
     disable_metrics = var.ecs_disable_metrics
     additional_user_data = var.additional_user_data
   }
+  )
   )
   key_name = var.key_name
 
