@@ -20,6 +20,78 @@ resource "aws_cloudwatch_log_group" "cloudwatch_log_group" {
   retention_in_days = var.log_retention_in_days
 }
 
+resource "aws_efs_file_system" "service_efs_file_system" {
+  tags = {
+    Name = local.full_name
+  }
+  encrypted = true
+  lifecycle_policy {
+    transition_to_ia = "AFTER_30_DAYS"
+  }
+}
+resource "aws_efs_mount_target" "efs_mount_target" {
+  count = length(var.subnet_ids)
+  file_system_id  = aws_efs_file_system.service_efs_file_system.id
+  subnet_id = var.subnet_ids[count.index]
+  security_groups = [aws_security_group.service_sg.id]
+}
+resource "aws_efs_access_point" "service_conf_efs_access_point" {
+  tags = {
+    Name = "${local.full_name}-conf"
+  }
+  file_system_id = aws_efs_file_system.service_efs_file_system.id
+  root_directory {
+    path = "/${local.name}/conf"
+    creation_info {
+      owner_gid = 0
+      owner_uid = 0
+      permissions = "755"
+    }
+  }
+}
+resource "aws_efs_access_point" "service_data_efs_access_point" {
+  tags = {
+    Name = "${local.full_name}-data"
+  }
+  file_system_id = aws_efs_file_system.service_efs_file_system.id
+  root_directory {
+    path = "/${local.name}/data"
+    creation_info {
+      owner_gid = 0
+      owner_uid = 0
+      permissions = "755"
+    }
+  }
+}
+resource "aws_efs_access_point" "service_logs_efs_access_point" {
+  tags = {
+    Name = "${local.full_name}-logs"
+  }
+  file_system_id = aws_efs_file_system.service_efs_file_system.id
+  root_directory {
+    path = "/${local.name}/logs"
+    creation_info {
+      owner_gid = 0
+      owner_uid = 0
+      permissions = "755"
+    }
+  }
+}
+resource "aws_efs_access_point" "service_extensions_efs_access_point" {
+  tags = {
+    Name = "${local.full_name}-conf"
+  }
+  file_system_id = aws_efs_file_system.service_efs_file_system.id
+  root_directory {
+    path = "/${local.name}/extensions"
+    creation_info {
+      owner_gid = 0
+      owner_uid = 0
+      permissions = "755"
+    }
+  }
+}
+
 resource "aws_ecs_task_definition" "ecs_task_definition" {
   family = local.full_name
   requires_compatibilities = [ "EC2", "FARGATE" ]
@@ -36,6 +108,24 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
     "cpu": 0,
     "memory": 2048,
     "memoryReservation": 80,
+    "mountPoints": [
+        {
+            "sourceVolume": "service-storage-conf",
+            "containerPath": "/opt/sonarqube/conf"
+        },
+        {
+            "sourceVolume": "service-storage-data",
+            "containerPath": "/opt/sonarqube/data"
+        },
+        {
+            "sourceVolume": "service-storage-logs",
+            "containerPath": "/opt/sonarqube/logs"
+        },
+        {
+            "sourceVolume": "service-storage-extensions",
+            "containerPath": "/opt/sonarqube/extensions"
+        }
+    ],
     "logConfiguration": {
       "logDriver": "awslogs",
       "options": {
@@ -79,6 +169,54 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
   }
 ]
 EOF
+  volume {
+    name = "service-storage-conf"
+    efs_volume_configuration {
+      file_system_id          = aws_efs_file_system.service_efs_file_system.id
+      transit_encryption      = "ENABLED"
+      transit_encryption_port = 2991
+      authorization_config {
+        access_point_id = aws_efs_access_point.service_conf_efs_access_point.id
+        #iam             = "ENABLED"
+      }
+    }
+  }
+  volume {
+    name = "service-storage-data"
+    efs_volume_configuration {
+      file_system_id          = aws_efs_file_system.service_efs_file_system.id
+      transit_encryption      = "ENABLED"
+      transit_encryption_port = 2992
+      authorization_config {
+        access_point_id = aws_efs_access_point.service_data_efs_access_point.id
+        #iam             = "ENABLED"
+      }
+    }
+  }
+  volume {
+    name = "service-storage-logs"
+    efs_volume_configuration {
+      file_system_id          = aws_efs_file_system.service_efs_file_system.id
+      transit_encryption      = "ENABLED"
+      transit_encryption_port = 2993
+      authorization_config {
+        access_point_id = aws_efs_access_point.service_logs_efs_access_point.id
+        #iam             = "ENABLED"
+      }
+    }
+  }
+  volume {
+    name = "service-storage-extensions"
+    efs_volume_configuration {
+      file_system_id          = aws_efs_file_system.service_efs_file_system.id
+      transit_encryption      = "ENABLED"
+      transit_encryption_port = 2994
+      authorization_config {
+        access_point_id = aws_efs_access_point.service_extensions_efs_access_point.id
+        #iam             = "ENABLED"
+      }
+    }
+  }
   lifecycle {
     create_before_destroy = true
   }
@@ -138,6 +276,21 @@ resource "aws_security_group" "service_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
     ipv6_cidr_blocks = ["::/0"]
+  }
+
+  ingress {
+    description = "nfs"
+    from_port = 2049
+    to_port = 2049
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    description = "nfs-transit-encryption"
+    from_port = 2990
+    to_port = 2993
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags = {
